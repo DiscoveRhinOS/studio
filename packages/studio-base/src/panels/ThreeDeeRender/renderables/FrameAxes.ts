@@ -92,7 +92,6 @@ export class FrameAxes extends SceneExtension<FrameAxisRenderable> {
         node: {
           label: "Transforms",
           visible: this.renderer.config.scene.transforms?.visible ?? true,
-          defaultExpansionState: "expanded",
           handler,
         },
       },
