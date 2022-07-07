@@ -93,6 +93,8 @@ export type RendererConfig = {
       /** Color of the connecting line between child and parent frames */
       lineColor?: string;
     };
+    /** Toggles visibility of all topics */
+    topicsVisible?: boolean;
   };
   /** frameId -> settings */
   transforms: Record<string, Partial<LayerSettingsTransform> | undefined>;
@@ -184,7 +186,7 @@ export class Renderer extends EventEmitter<RendererEvents> {
   modelCache: ModelCache;
   transformTree = new TransformTree();
   coordinateFrameList: SelectEntry[] = [];
-  currentTime: bigint | undefined;
+  currentTime = 0n;
   fixedFrameId: string | undefined;
   renderFrameId: string | undefined;
   followFrameId: string | undefined;
@@ -200,15 +202,17 @@ export class Renderer extends EventEmitter<RendererEvents> {
     // NOTE: Global side effect
     THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
 
+    this.canvas = canvas;
+    this.config = config;
+
     this.settings = new SettingsManager(baseSettingsTree());
     this.settings.on("update", () => this.emit("settingsTreeChange", this));
     // Add the "Custom Layers" node first so merging happens in the correct order.
     // Another approach would be to modify SettingsManager to allow merging parent
     // nodes in after their children
     this.settings.setNodesForKey(CUSTOM_LAYERS_ID, []);
+    this.updateCustomLayersCount();
 
-    this.canvas = canvas;
-    this.config = config;
     this.gl = new THREE.WebGLRenderer({
       canvas,
       alpha: true,
@@ -387,18 +391,16 @@ export class Renderer extends EventEmitter<RendererEvents> {
     };
     this.customLayerActions.set(options.layerId, { action, handler });
 
+    const layerCount = Object.keys(this.config.layers).length;
+    const label = `Custom Layers${layerCount > 0 ? ` (${layerCount})` : ""}`;
+
     // Rebuild the "Custom Layers" settings tree node
     const actions: SettingsTreeNodeActionItem[] = Array.from(this.customLayerActions.values()).map(
       (entry) => entry.action,
     );
     const entry: SettingsTreeEntry = {
       path: ["layers"],
-      node: {
-        label: "Custom Layers",
-        defaultExpansionState: "expanded",
-        actions,
-        handler: this.handleCustomLayersAction,
-      },
+      node: { label, actions, handler: this.handleCustomLayersAction },
     };
     this.settings.setNodesForKey(CUSTOM_LAYERS_ID, [entry]);
   }
@@ -469,7 +471,24 @@ export class Renderer extends EventEmitter<RendererEvents> {
       for (const extension of this.sceneExtensions.values()) {
         this.settings.setNodesForKey(extension.extensionId, extension.settingsNodes());
       }
+
+      // Update the Topics node label
+      const topicCount = this.topics?.length ?? 0;
+      const topicsNode = this.settings.tree()["topics"];
+      const vizCount = Object.keys(topicsNode?.children ?? {}).length;
+
+      if (topicCount === 0 && vizCount === 0) {
+        this.settings.setLabel(["topics"], `Topics`);
+      } else {
+        this.settings.setLabel(["topics"], `Topics (${vizCount}/${topicCount})`);
+      }
     }
+  }
+
+  updateCustomLayersCount(): void {
+    const layerCount = Object.keys(this.config.layers).length;
+    const label = `Custom Layers${layerCount > 0 ? ` (${layerCount})` : ""}`;
+    this.settings.setLabel(["layers"], label);
   }
 
   /** Translate a @foxglove/regl-worldview CameraState to the three.js coordinate system */
@@ -609,9 +628,7 @@ export class Renderer extends EventEmitter<RendererEvents> {
   // Callback handlers
 
   animationFrame = (): void => {
-    if (this.currentTime != undefined) {
-      this.frameHandler(this.currentTime);
-    }
+    this.frameHandler(this.currentTime);
   };
 
   frameHandler = (currentTime: bigint): void => {
@@ -747,6 +764,9 @@ export class Renderer extends EventEmitter<RendererEvents> {
 
     // Trigger the add custom layer action handler
     entry.handler(instanceId);
+
+    // Update the Custom Layers node label with the number of custom layers
+    this.updateCustomLayersCount();
   };
 
   private _updateFrames(): void {

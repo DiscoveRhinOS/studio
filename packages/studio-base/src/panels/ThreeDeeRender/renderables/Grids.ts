@@ -167,6 +167,7 @@ export class Grids extends SceneExtension<GridRenderable> {
 
         // Update the settings tree
         this.updateSettingsTree();
+        this.renderer.updateCustomLayersCount();
       }
       return;
     }
