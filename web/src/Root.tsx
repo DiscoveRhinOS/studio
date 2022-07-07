@@ -74,7 +74,7 @@ export function Root({ appConfiguration }: { appConfiguration: IAppConfiguration
   return (
     <App
       enableDialogAuth={enableDialogAuth}
-      enableLaunchPreferenceScreen
+      // enableLaunchPreferenceScreen
       deepLinks={[window.location.href]}
       dataSources={dataSources}
       appConfiguration={appConfiguration}
