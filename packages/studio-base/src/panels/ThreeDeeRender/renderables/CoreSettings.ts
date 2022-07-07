@@ -60,6 +60,7 @@ export class CoreSettings extends SceneExtension {
               input: "select",
               options: followTfOptions,
               value: followTfValue,
+              error: this.renderer.settings.errors.errors.errorAtPath(["general", "followTf"]),
             },
           },
           defaultExpansionState: "expanded",
