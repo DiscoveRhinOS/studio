@@ -10,26 +10,32 @@ import { defaultPlaybackConfig } from "@foxglove/studio-base/providers/CurrentLa
  * to avoid presenting the user with a blank layout.
  */
 export const defaultLayout: PanelsState = {
-  configById: {
-    "3D Panel!18i6zy7": {
-      pinTopics: true,
-    },
-    "RawMessages!os6rgs": {},
-    "ImageViewPanel!3mnp456": {},
+  "configById": {
+    "Plot!3fa5k5u": {
+      "title": "Plot",
+      "paths": [
+        {
+          "value": "/topic.data",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    }
   },
-  globalVariables: {},
-  userNodes: {},
-  linkedGlobalVariables: [],
-  playbackConfig: { ...defaultPlaybackConfig },
-  layout: {
-    first: "3D Panel!18i6zy7",
-    second: {
-      first: "ImageViewPanel!3mnp456",
-      second: "RawMessages!os6rgs",
-      direction: "column",
-      splitPercentage: 30,
-    },
-    direction: "row",
-    splitPercentage: 70,
+  "globalVariables": {},
+  "userNodes": {},
+  "linkedGlobalVariables": [],
+  "playbackConfig": {
+    "speed": 1,
+    "messageOrder": "receiveTime"
   },
+  "layout": "Plot!3fa5k5u"
 } as const;
