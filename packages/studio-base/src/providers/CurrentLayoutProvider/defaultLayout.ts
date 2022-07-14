@@ -8,13 +8,18 @@ import { PanelsState } from "@foxglove/studio-base/context/CurrentLayoutContext/
  * This is loaded when the user has no layout selected on application launch
  * to avoid presenting the user with a blank layout.
  */
+
+import myDefaultLayout from "./layout.json"
+console.log(myDefaultLayout);
+
+
 export const defaultLayout: PanelsState = {
   "configById": {
     "Plot!3fa5k5u": {
       "title": "Plot",
       "paths": [
         {
-          "value": "/topic.data",
+          "value": "/topic.dataX",
           "enabled": true,
           "timestampMethod": "receiveTime"
         }

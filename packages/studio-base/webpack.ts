@@ -102,6 +102,14 @@ export function makeConfig(
           test: /\.wasm$/,
           type: "asset/resource",
         },
+        {                                                                        
+          test: /\layout.json$/,                                                       
+          loader: 'file-loader', 
+          type: "asset/resource",                              
+          generator: {
+            filename: 'static/[base]'
+          }
+        },
         {
           test: /\.tsx?$/,
           exclude: /node_modules/,

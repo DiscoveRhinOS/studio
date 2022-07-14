@@ -2599,6 +2599,7 @@ __metadata:
     escape-html: 1.0.3
     fake-indexeddb: 3.1.7
     fetch-mock: 9.11.0
+    file-loader: 6.2.0
     fork-ts-checker-webpack-plugin: 7.2.1
     fuzzysort: 1.1.4
     fzf: 0.5.1
@@ -12620,7 +12621,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"file-loader@npm:^6.2.0":
+"file-loader@npm:6.2.0, file-loader@npm:^6.2.0":
   version: 6.2.0
   resolution: "file-loader@npm:6.2.0"
   dependencies:
