@@ -33,8 +33,7 @@ export const defaultLayout: PanelsState = {
   "userNodes": {},
   "linkedGlobalVariables": [],
   "playbackConfig": {
-    "speed": 1,
-    "messageOrder": "receiveTime"
+    "speed": 1.0
   },
   "layout": "Plot!3fa5k5u"
 } as const;
