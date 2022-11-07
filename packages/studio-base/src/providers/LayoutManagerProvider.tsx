@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { useCallback, useEffect, useMemo } from "react";
-import { useToasts } from "react-toast-notifications";
 import { useNetworkState } from "react-use";
 
 import { useShallowMemo, useVisibilityState } from "@foxglove/hooks";
@@ -27,7 +26,6 @@ const SYNC_INTERVAL_MAX_MS = 3 * 60_000;
 export default function LayoutManagerProvider({
   children,
 }: React.PropsWithChildren<unknown>): JSX.Element {
-  const { addToast } = useToasts();
   const layoutStorage = useLayoutStorage();
   const remoteLayoutStorage = useRemoteLayoutStorage();
   const [enableLayoutDebugging = false] = useAppConfigurationValue<boolean>(
@@ -60,7 +58,6 @@ export default function LayoutManagerProvider({
           failures = 0;
         } catch (error) {
           log.error("Sync failed:", error);
-          addToast((error as Error).toString(), { appearance: "error", autoDismiss: true });
           failures++;
         }
         // Exponential backoff with jitter:
@@ -75,7 +72,7 @@ export default function LayoutManagerProvider({
       log.debug("Canceling layout sync due to effect cleanup callback");
       controller.abort();
     };
-  }, [addToast, enableSyncing, layoutManager]);
+  }, [enableSyncing, layoutManager]);
 
   const syncNow = useCallbackWithToast(async () => {
     await layoutManager.syncWithRemote(new AbortController().signal);

@@ -18,7 +18,7 @@ import styled from "styled-components";
 import ChildToggle from "@foxglove/studio-base/components/ChildToggle";
 import Icon from "@foxglove/studio-base/components/Icon";
 import KeyboardShortcut from "@foxglove/studio-base/components/KeyboardShortcut";
-import Menu, { Item } from "@foxglove/studio-base/components/Menu";
+import { Menu, Item } from "@foxglove/studio-base/components/Menu";
 import useGuaranteedContext from "@foxglove/studio-base/hooks/useGuaranteedContext";
 import { ROW_HEIGHT } from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/constants";
 import { TopicTreeContext } from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/useTopicTree";
@@ -43,7 +43,7 @@ type Props = {
 export const DOT_MENU_WIDTH = 18; // The width of the small icon.
 
 export default function TreeNodeMenu({
-  datatype,
+  datatype: schemaName,
   nodeKey,
   providerAvailable,
   setCurrentEditingTopic,
@@ -119,11 +119,11 @@ export default function TreeNodeMenu({
             Copy topic name
           </Item>
         )}
-        {datatype && (
+        {schemaName && (
           <Item
             dataTest={`topic-row-menu-edit-settings-${topicName}`}
             onClick={() => {
-              setCurrentEditingTopic({ name: topicName, datatype });
+              setCurrentEditingTopic({ name: topicName, schemaName });
               setIsOpen(false);
             }}
           >

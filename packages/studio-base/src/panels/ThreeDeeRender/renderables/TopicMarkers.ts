@@ -9,6 +9,7 @@ import { BaseSettings } from "../settings";
 import { updatePose } from "../updatePose";
 import type { LayerSettingsMarker } from "./Markers";
 import { RenderableMarker, getMarkerId } from "./markers/RenderableMarker";
+import { RenderableMeshResource } from "./markers/RenderableMeshResource";
 import { missingTransformMessage, MISSING_TRANSFORM } from "./transforms";
 
 export type LayerSettingsMarkerNamespace = BaseSettings;
@@ -33,11 +34,11 @@ export type MarkerTopicUserData = BaseUserData & {
 type PartialMarkerSettings = Partial<LayerSettingsMarker> | undefined;
 
 export class MarkersNamespace {
-  namespace: string;
-  markersById = new Map<number, RenderableMarker>();
-  settings: LayerSettingsMarkerNamespace;
+  public namespace: string;
+  public markersById = new Map<number, RenderableMarker>();
+  public settings: LayerSettingsMarkerNamespace;
 
-  constructor(topic: string, namespace: string, renderer: Renderer) {
+  public constructor(topic: string, namespace: string, renderer: Renderer) {
     this.namespace = namespace;
 
     // Set the initial settings from default values merged with any user settings
@@ -48,14 +49,15 @@ export class MarkersNamespace {
 }
 
 export class TopicMarkers extends Renderable<MarkerTopicUserData> {
-  namespaces = new Map<string, MarkersNamespace>();
+  public override pickable = false;
+  public namespaces = new Map<string, MarkersNamespace>();
 
   // eslint-disable-next-line no-restricted-syntax
-  get topic(): string {
+  public get topic(): string {
     return this.userData.topic;
   }
 
-  override dispose(): void {
+  public override dispose(): void {
     for (const ns of this.namespaces.values()) {
       for (const marker of ns.markersById.values()) {
         this.renderer.markerPool.release(marker);
@@ -65,7 +67,7 @@ export class TopicMarkers extends Renderable<MarkerTopicUserData> {
     this.namespaces.clear();
   }
 
-  addMarkerMessage(marker: Marker, receiveTime: bigint): void {
+  public addMarkerMessage(marker: Marker, receiveTime: bigint): void {
     switch (marker.action) {
       case MarkerAction.ADD:
       case MarkerAction.MODIFY:
@@ -88,7 +90,17 @@ export class TopicMarkers extends Renderable<MarkerTopicUserData> {
     }
   }
 
-  startFrame(currentTime: bigint, renderFrameId: string, fixedFrameId: string): void {
+  public update(): void {
+    // Updates each individual marker renderable using `originalMarker` and the
+    // current topic settings
+    for (const ns of this.namespaces.values()) {
+      for (const renderable of ns.markersById.values()) {
+        renderable.update(renderable.userData.originalMarker, renderable.userData.receiveTime);
+      }
+    }
+  }
+
+  public startFrame(currentTime: bigint, renderFrameId: string, fixedFrameId: string): void {
     this.visible = this.userData.settings.visible;
     if (!this.visible) {
       this.renderer.settings.errors.clearTopic(this.topic);
@@ -159,9 +171,9 @@ export class TopicMarkers extends Renderable<MarkerTopicUserData> {
       }
       this.add(renderable);
       ns.markersById.set(marker.id, renderable);
-    } else {
-      renderable.update(marker, receiveTime);
     }
+
+    renderable.update(marker, receiveTime);
   }
 
   private _deleteMarker(ns: string, id: number): boolean {
@@ -298,8 +310,12 @@ export class TopicMarkers extends Renderable<MarkerTopicUserData> {
         return pool.acquire(MarkerType.POINTS, this.topic, marker, receiveTime);
       case MarkerType.TEXT_VIEW_FACING:
         return pool.acquire(MarkerType.TEXT_VIEW_FACING, this.topic, marker, receiveTime);
-      case MarkerType.MESH_RESOURCE:
-        return pool.acquire(MarkerType.MESH_RESOURCE, this.topic, marker, receiveTime);
+      case MarkerType.MESH_RESOURCE: {
+        const renderable = pool.acquire(MarkerType.MESH_RESOURCE, this.topic, marker, receiveTime);
+        // Force reload the mesh
+        (renderable as RenderableMeshResource).update(marker, receiveTime, true);
+        return renderable;
+      }
       case MarkerType.TRIANGLE_LIST:
         return pool.acquire(MarkerType.TRIANGLE_LIST, this.topic, marker, receiveTime);
       default: {

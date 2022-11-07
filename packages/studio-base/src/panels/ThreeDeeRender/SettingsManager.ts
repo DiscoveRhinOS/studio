@@ -20,12 +20,12 @@ export type SettingsManagerEvents = {
 };
 
 export class SettingsManager extends EventEmitter<SettingsManagerEvents> {
-  errors = new LayerErrors();
+  public errors = new LayerErrors();
 
   private _nodesByKey = new Map<string, SettingsTreeEntry[]>();
   private _root: SettingsTreeNodeWithActionHandler = { children: {} };
 
-  constructor(baseTree: SettingsTreeNodes) {
+  public constructor(baseTree: SettingsTreeNodes) {
     super();
 
     this._root = { children: baseTree };
@@ -34,7 +34,7 @@ export class SettingsManager extends EventEmitter<SettingsManagerEvents> {
     this.errors.on("clear", this.handleErrorUpdate);
   }
 
-  setNodesForKey(key: string, nodes: SettingsTreeEntry[]): void {
+  public setNodesForKey(key: string, nodes: SettingsTreeEntry[]): void {
     this._root = produce(this._root, (draft) => {
       // Delete all previous nodes for this key
       const prevNodes = this._nodesByKey.get(key);
@@ -59,7 +59,15 @@ export class SettingsManager extends EventEmitter<SettingsManagerEvents> {
     this.emit("update");
   }
 
-  clearChildren(path: Path): void {
+  public setLabel(path: Path, label: string): void {
+    this._root = produce(this._root, (draft) => {
+      setLabelAtPath(draft, path, label);
+    });
+
+    this.emit("update");
+  }
+
+  public clearChildren(path: Path): void {
     this._root = produce(this._root, (draft) => {
       clearChildren(draft, path);
     });
@@ -67,11 +75,11 @@ export class SettingsManager extends EventEmitter<SettingsManagerEvents> {
     this.emit("update");
   }
 
-  tree(): SettingsTreeNodes {
+  public tree(): SettingsTreeNodes {
     return this._root.children!;
   }
 
-  handleAction = (action: SettingsTreeAction): void => {
+  public handleAction = (action: SettingsTreeAction): void => {
     const path = action.payload.path;
 
     // Walk the settings tree down to the end of the path, firing any action
@@ -88,7 +96,7 @@ export class SettingsManager extends EventEmitter<SettingsManagerEvents> {
     }
   };
 
-  handleErrorUpdate = (path: Path): void => {
+  public handleErrorUpdate = (path: Path): void => {
     this._root = produce(this._root, (draft) => {
       if (path.length === 0) {
         return { ...draft };
@@ -158,7 +166,8 @@ function addNodeAtPath(root: SettingsTreeNode, path: Path, node: SettingsTreeNod
     throw new Error(`Empty path for settings node "${node.label}"`);
   }
 
-  // Recursively walk/build the settings tree down to the end of the path
+  // Recursively walk/build the settings tree down to the end of the path except
+  // for the last segment, which is the node to add
   let curNode = root;
   for (let i = 0; i < path.length - 1; i++) {
     const segment = path[i]!;
@@ -177,4 +186,25 @@ function addNodeAtPath(root: SettingsTreeNode, path: Path, node: SettingsTreeNod
     curNode.children = {};
   }
   curNode.children[lastSegment] = node;
+}
+
+function setLabelAtPath(root: SettingsTreeNode, path: Path, label: string): void {
+  if (path.length === 0) {
+    throw new Error(`Empty path for settings label "${label}"`);
+  }
+
+  // Recursively walk/build the settings tree down to the end of the path
+  let curNode = root;
+  for (let i = 0; i < path.length; i++) {
+    const segment = path[i]!;
+    if (!curNode.children) {
+      curNode.children = {};
+    }
+    if (!curNode.children[segment]) {
+      curNode.children[segment] = {};
+    }
+    curNode = curNode.children[segment]!;
+  }
+
+  curNode.label = label;
 }

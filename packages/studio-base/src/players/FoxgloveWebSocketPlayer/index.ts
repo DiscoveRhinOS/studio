@@ -23,7 +23,6 @@ import {
   TopicStats,
 } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
-import { TimestampMethod } from "@foxglove/studio-base/util/time";
 import { Channel, ChannelId, FoxgloveClient, SubscriptionId } from "@foxglove/ws-protocol";
 
 const log = Log.getLogger(__dirname);
@@ -49,7 +48,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
   private _datatypes?: RosDatatypes; // Datatypes as published by the WebSocket.
   private _start?: Time; // The time at which we started playing.
   private _parsedMessages: MessageEvent<unknown>[] = []; // Queue of messages that we'll send in next _emitState() call.
-  private _messageOrder: TimestampMethod = "receiveTime";
   private _receivedBytes: number = 0;
   private _metricsCollector: PlayerMetricsCollectorInterface;
   private _hasReceivedMessage = false;
@@ -67,7 +65,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
   private _recentlyCanceledSubscriptions = new Set<SubscriptionId>();
   private readonly _sourceId: string;
 
-  constructor({
+  public constructor({
     url,
     metricsCollector,
     sourceId,
@@ -160,6 +158,12 @@ export default class FoxgloveWebSocketPlayer implements Player {
             if (base64.decode(channel.schema, schemaData, 0) !== schemaData.byteLength) {
               throw new Error(`Failed to decode base64 schema on channel ${channel.id}`);
             }
+          } else if (channel.encoding === "ros1") {
+            schemaEncoding = "ros1msg";
+            schemaData = new TextEncoder().encode(channel.schema);
+          } else if (channel.encoding === "cdr") {
+            schemaEncoding = "ros2msg";
+            schemaData = new TextEncoder().encode(channel.schema);
           } else {
             throw new Error(`Unsupported encoding ${channel.encoding}`);
           }
@@ -212,7 +216,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
           if (channel.id === id) {
             this._resolvedSubscriptionsById.delete(subId);
             this._resolvedSubscriptionsByTopic.delete(channel.topic);
-            client.unsubscribe(subId); // TODO: batch
+            client.unsubscribe(subId);
             this._unresolvedSubscriptions.add(channel.topic);
           }
         }
@@ -263,6 +267,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
           receiveTime,
           message: chanInfo.parsedChannel.deserializer(data),
           sizeInBytes: data.byteLength,
+          schemaName: chanInfo.channel.schemaName,
         });
 
         // Update the message count for this topic
@@ -291,9 +296,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
 
   private _updateTopicsAndDatatypes() {
     // Build a new topics array from this._channelsById
-    const topics = Array.from(this._channelsById.values(), (chanInfo) => ({
+    const topics: Topic[] = Array.from(this._channelsById.values(), (chanInfo) => ({
       name: chanInfo.channel.topic,
-      datatype: chanInfo.parsedChannel.fullSchemaName,
+      schemaName: chanInfo.parsedChannel.fullSchemaName,
     }));
 
     // Remove stats entries for removed topics
@@ -355,7 +360,6 @@ export default class FoxgloveWebSocketPlayer implements Player {
       activeData: {
         messages,
         totalBytesReceived: this._receivedBytes,
-        messageOrder: this._messageOrder,
         startTime: this._start ?? ZERO_TIME,
         endTime: this._currentTime ?? ZERO_TIME,
         currentTime: this._currentTime ?? ZERO_TIME,
@@ -370,12 +374,12 @@ export default class FoxgloveWebSocketPlayer implements Player {
     });
   });
 
-  setListener(listener: (arg0: PlayerState) => Promise<void>): void {
+  public setListener(listener: (arg0: PlayerState) => Promise<void>): void {
     this._listener = listener;
     this._emitState();
   }
 
-  close(): void {
+  public close(): void {
     this._closed = true;
     if (this._client) {
       this._client.close();
@@ -384,7 +388,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     this._hasReceivedMessage = false;
   }
 
-  setSubscriptions(subscriptions: SubscribePayload[]): void {
+  public setSubscriptions(subscriptions: SubscribePayload[]): void {
     if (!this._client || this._closed) {
       return;
     }
@@ -398,7 +402,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
 
     for (const [topic, subId] of this._resolvedSubscriptionsByTopic) {
       if (!newTopics.has(topic)) {
-        this._client.unsubscribe(subId); // TODO: batch?
+        this._client.unsubscribe(subId);
         this._resolvedSubscriptionsByTopic.delete(topic);
         this._resolvedSubscriptionsById.delete(subId);
         this._recentlyCanceledSubscriptions.add(subId);
@@ -429,7 +433,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     for (const topic of this._unresolvedSubscriptions) {
       const chanInfo = this._channelsByTopic.get(topic);
       if (chanInfo) {
-        const subId = this._client.subscribe(chanInfo.channel.id); //TODO: batch?
+        const subId = this._client.subscribe(chanInfo.channel.id);
         this._unresolvedSubscriptions.delete(topic);
         this._resolvedSubscriptionsByTopic.set(topic, subId);
         this._resolvedSubscriptionsById.set(subId, chanInfo);
@@ -437,24 +441,23 @@ export default class FoxgloveWebSocketPlayer implements Player {
     }
   }
 
-  setPublishers(publishers: AdvertiseOptions[]): void {
+  public setPublishers(publishers: AdvertiseOptions[]): void {
     if (publishers.length > 0) {
       throw new Error("Publishing is not supported by the Foxglove WebSocket connection");
     }
   }
 
-  setParameter(): void {
+  public setParameter(): void {
     throw new Error("Parameter editing is not supported by the Foxglove WebSocket connection");
   }
 
-  publish(): void {
+  public publish(): void {
     throw new Error("Publishing is not supported by the Foxglove WebSocket connection");
   }
 
-  async callService(): Promise<unknown> {
+  public async callService(): Promise<unknown> {
     throw new Error("Service calls are not supported by the Foxglove WebSocket connection");
   }
 
-  requestBackfill(): void {}
-  setGlobalVariables(): void {}
+  public setGlobalVariables(): void {}
 }

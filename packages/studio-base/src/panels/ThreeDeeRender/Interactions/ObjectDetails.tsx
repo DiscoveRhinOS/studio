@@ -11,38 +11,19 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { first, omit, sortBy } from "lodash";
+import { first, omit } from "lodash";
 import { ReactNode } from "react";
 import Tree from "react-json-tree";
-import styled from "styled-components";
 
 import { isTypicalFilterName } from "@foxglove/studio-base/components/MessagePathSyntax/isTypicalFilterName";
+import Stack from "@foxglove/studio-base/components/Stack";
 import { RosValue } from "@foxglove/studio-base/players/types";
 import { format, formatDuration } from "@foxglove/studio-base/util/formatTime";
 import { useJsonTreeTheme } from "@foxglove/studio-base/util/globalConstants";
 
-import GlobalVariableLink from "./GlobalVariableLink/index";
 import { InteractionData } from "./types";
 
 const DURATION_20_YEARS_SEC = 20 * 365 * 24 * 60 * 60;
-
-// Sort the keys of objects to make their presentation more predictable
-const PREFERRED_OBJECT_KEY_ORDER = [
-  "id",
-  "ns",
-  "type",
-  "action",
-  "header",
-  "lifetime",
-  "color",
-  "colors",
-  "pose",
-  "points",
-].reverse();
-
-const TreeContainer = styled.div`
-  padding: 12px 0 16px 0;
-`;
 
 type Props = {
   readonly interactionData?: InteractionData;
@@ -68,7 +49,7 @@ function ObjectDetails({ interactionData, selectedObject }: Props): JSX.Element 
   if (topic.length === 0) {
     // show the original object directly if there is no interaction data
     return (
-      <TreeContainer>
+      <Stack paddingY={1}>
         <Tree
           data={selectedObject}
           shouldExpandNode={(_markerKeyPath, _data, level) => level < 2}
@@ -77,71 +58,29 @@ function ObjectDetails({ interactionData, selectedObject }: Props): JSX.Element 
           theme={{ ...jsonTreeTheme, tree: { margin: 0 } }}
           hideRoot
         />
-      </TreeContainer>
+      </Stack>
     );
   }
 
-  const sortedDataObject = Object.fromEntries(
-    sortBy(Object.keys(originalObject), (key) => -PREFERRED_OBJECT_KEY_ORDER.indexOf(key)).map(
-      (key) => [key, originalObject[key]],
-    ),
-  );
-
   return (
-    <TreeContainer>
+    <Stack paddingY={1}>
       <Tree
-        data={sortedDataObject}
+        data={originalObject}
         shouldExpandNode={() => false}
         invertTheme={false}
         theme={{ ...jsonTreeTheme, tree: { margin: 0, whiteSpace: "pre-line" } }}
         hideRoot
         getItemString={getItemString}
         postprocessValue={maybePlainObject}
-        labelRenderer={(markerKeyPath, _p1, _p2, hasChildren) => {
+        labelRenderer={(markerKeyPath, _p1, _p2, _hasChildren) => {
           const label = first(markerKeyPath);
-          if (!hasChildren) {
-            return <span style={{ padding: "0 4px 0 0" }}>{label}</span>;
-          }
-
-          let objectForPath: Record<string, unknown> | undefined = sortedDataObject;
-          for (let i = markerKeyPath.length - 1; i >= 0; i--) {
-            objectForPath = objectForPath[markerKeyPath[i]!] as Record<string, unknown> | undefined;
-            if (!objectForPath) {
-              break;
-            }
-          }
-
-          if (objectForPath) {
-            return (
-              <GlobalVariableLink
-                hasNestedValue
-                style={{ marginLeft: 4 }}
-                label={label?.toString()}
-                markerKeyPath={markerKeyPath.map((item) => item.toString())}
-                topic={topic}
-                variableValue={objectForPath}
-              />
-            );
-          }
-          return <></>;
+          return <span style={{ padding: "0 4px 0 0" }}>{label}</span>;
         }}
-        valueRenderer={(
-          label: string,
-          itemValue: unknown,
-          ...markerKeyPath: (string | number)[]
-        ) => {
-          return (
-            <GlobalVariableLink
-              style={{ marginLeft: 16 }}
-              label={label}
-              markerKeyPath={markerKeyPath.map((item) => item.toString())}
-              topic={topic}
-              variableValue={itemValue}
-            />
-          );
+        valueRenderer={(label: string) => {
+          return <span>{label}</span>;
         }}
       />
-    </TreeContainer>
+    </Stack>
   );
 }
 

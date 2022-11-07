@@ -4,12 +4,13 @@
 
 import { quat } from "gl-matrix";
 
-import { MessageEvent, Topic } from "@foxglove/studio";
+import { MessageEvent } from "@foxglove/studio";
+import { Topic } from "@foxglove/studio-base/players/types";
 import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
 
 import ThreeDeeRender from "../index";
 import { NavPath, TransformStamped } from "../ros";
-import { QUAT_IDENTITY } from "./common";
+import { QUAT_IDENTITY, rad2deg } from "./common";
 import useDelayedFixture from "./useDelayedFixture";
 
 export default {
@@ -20,9 +21,9 @@ export default {
 NavMsgs_Path.parameters = { colorScheme: "dark" };
 export function NavMsgs_Path(): JSX.Element {
   const topics: Topic[] = [
-    { name: "/baselink_path", datatype: "nav_msgs/Path" },
-    { name: "/sensor_path", datatype: "nav_msgs/Path" },
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
+    { name: "/baselink_path", schemaName: "nav_msgs/Path" },
+    { name: "/sensor_path", schemaName: "nav_msgs/Path" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
   ];
   const tf1: MessageEvent<TransformStamped> = {
     topic: "/tf",
@@ -35,6 +36,7 @@ export function NavMsgs_Path(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf2: MessageEvent<TransformStamped> = {
@@ -48,6 +50,7 @@ export function NavMsgs_Path(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf3: MessageEvent<TransformStamped> = {
@@ -61,6 +64,7 @@ export function NavMsgs_Path(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -85,6 +89,7 @@ export function NavMsgs_Path(): JSX.Element {
         pose: { position: { x: i - 5, y: 0, z: 0 }, orientation: makeOrientation(i) },
       })),
     },
+    schemaName: "nav_msgs/Path",
     sizeInBytes: 0,
   };
 
@@ -98,6 +103,7 @@ export function NavMsgs_Path(): JSX.Element {
         pose: { position: { x: i - 5, y: 0, z: i % 2 }, orientation: makeOrientation(i) },
       })),
     },
+    schemaName: "nav_msgs/Path",
     sizeInBytes: 0,
   };
 
@@ -125,14 +131,18 @@ export function NavMsgs_Path(): JSX.Element {
           cameraState: {
             distance: 15,
             perspective: true,
-            phi: 1,
+            phi: rad2deg(1),
             targetOffset: [0, 2, 0],
-            thetaOffset: -0.25,
-            fovy: 0.75,
+            thetaOffset: rad2deg(-0.25),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
             targetOrientation: [0, 0, 0, 1],
+          },
+          topics: {
+            "/baselink_path": { visible: true },
+            "/sensor_path": { visible: true },
           },
         }}
       />

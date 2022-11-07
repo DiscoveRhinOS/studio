@@ -3,12 +3,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import type { Time } from "@foxglove/rostime";
+import { FrameTransform, NumericType } from "@foxglove/schemas";
 
 import type { PartialMessage } from "./SceneExtension";
-import type {
+import {
   ColorRGBA,
   Header,
   Matrix6,
+  PointFieldType,
   Quaternion,
   TFMessage,
   Transform,
@@ -16,6 +18,20 @@ import type {
   Vector3,
 } from "./ros";
 import type { Pose } from "./transforms";
+
+// Legacy foxglove.Transform type -- see https://github.com/foxglove/schemas/pull/46
+type LegacyTransform = {
+  timestamp: Time;
+  translation: Vector3;
+  rotation: Quaternion;
+};
+// Legacy foxglove.FrameTransform type -- see https://github.com/foxglove/schemas/pull/46
+export type LegacyFrameTransform = {
+  timestamp: Time;
+  parent_frame_id: string;
+  child_frame_id: string;
+  transform: LegacyTransform;
+};
 
 export function normalizeTime(time: Partial<Time> | undefined): Time {
   if (!time) {
@@ -53,7 +69,11 @@ export function normalizeFloat32Array(array: unknown): Float32Array {
     return new Float32Array(0);
   } else if (array instanceof Float32Array) {
     return array;
-  } else if (Array.isArray(array) || array instanceof ArrayBuffer) {
+  } else if (
+    Array.isArray(array) ||
+    array instanceof ArrayBuffer ||
+    array instanceof Float64Array
+  ) {
     return new Float32Array(array);
   } else {
     return new Float32Array(0);
@@ -147,4 +167,43 @@ export function normalizeTFMessage(tfMessage: PartialMessage<TFMessage> | undefi
   return {
     transforms: (tfMessage?.transforms ?? []).map(normalizeTransformStamped),
   };
+}
+
+export function normalizeFrameTransform(
+  frameTransform:
+    | (PartialMessage<FrameTransform> & PartialMessage<LegacyFrameTransform>)
+    | undefined,
+): FrameTransform {
+  return {
+    timestamp: normalizeTime(frameTransform?.timestamp),
+    parent_frame_id: frameTransform?.parent_frame_id ?? "",
+    child_frame_id: frameTransform?.child_frame_id ?? "",
+    translation: normalizeVector3(
+      frameTransform?.translation ?? frameTransform?.transform?.translation,
+    ),
+    rotation: normalizeQuaternion(frameTransform?.rotation ?? frameTransform?.transform?.rotation),
+  };
+}
+
+export function numericTypeToPointFieldType(type: NumericType): PointFieldType {
+  switch (type) {
+    case NumericType.UINT8:
+      return PointFieldType.UINT8;
+    case NumericType.INT8:
+      return PointFieldType.INT8;
+    case NumericType.UINT16:
+      return PointFieldType.UINT16;
+    case NumericType.INT16:
+      return PointFieldType.INT16;
+    case NumericType.UINT32:
+      return PointFieldType.UINT32;
+    case NumericType.INT32:
+      return PointFieldType.INT32;
+    case NumericType.FLOAT32:
+      return PointFieldType.FLOAT32;
+    case NumericType.FLOAT64:
+      return PointFieldType.FLOAT64;
+    default:
+      return PointFieldType.UNKNOWN;
+  }
 }

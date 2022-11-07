@@ -35,15 +35,6 @@ export type MutablePoint2D = {
 };
 export type Point2D = Readonly<MutablePoint2D>;
 
-export type Matrix3 = [number, number, number, number, number, number, number, number, number];
-
-// prettier-ignore
-export type Matrix3x4 = [
-  number, number, number, number,
-  number, number, number, number,
-  number, number, number, number,
-];
-
 export type Header = Readonly<{
   frame_id: string;
   stamp: Time;
@@ -129,7 +120,7 @@ type Colors = readonly Color[];
 export type BaseMarker = Readonly<
   StampedMessage & {
     ns: string;
-    id: string | number; // TODO: Actually just a number
+    id: string | number;
     action: 0 | 1 | 2 | 3;
     pose: MutablePose;
     scale: Scale;
@@ -139,7 +130,7 @@ export type BaseMarker = Readonly<
     frame_locked: boolean;
     points?: Point[];
     text?: string;
-    mesh_resource?: string; // TODO: required
+    mesh_resource?: string;
     mesh_use_embedded_materials?: boolean;
     primitive?: string;
     metadata?: Readonly<Record<string, unknown>>;

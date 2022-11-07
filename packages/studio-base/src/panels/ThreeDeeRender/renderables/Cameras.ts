@@ -2,10 +2,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { PinholeCameraModel } from "@foxglove/den/image";
 import Logger from "@foxglove/log";
 import { toNanoSec } from "@foxglove/rostime";
+import { CameraCalibration } from "@foxglove/schemas";
 import { SettingsTreeAction, SettingsTreeFields } from "@foxglove/studio";
-import PinholeCameraModel from "@foxglove/studio-base/panels/Image/lib/PinholeCameraModel";
+import type { RosValue } from "@foxglove/studio-base/players/types";
 import { MutablePoint } from "@foxglove/studio-base/types/Messages";
 
 import { BaseUserData, Renderable } from "../Renderable";
@@ -13,10 +15,11 @@ import { Renderer } from "../Renderer";
 import { PartialMessage, PartialMessageEvent, SceneExtension } from "../SceneExtension";
 import { SettingsTreeEntry } from "../SettingsManager";
 import { makeRgba, rgbaToCssString, stringToRgba } from "../color";
-import { normalizeHeader } from "../normalizeMessages";
+import { CAMERA_CALIBRATION_DATATYPES } from "../foxglove";
+import { normalizeHeader, normalizeTime } from "../normalizeMessages";
 import {
   CameraInfo,
-  CAMERA_INFO_DATATYPES,
+  CAMERA_INFO_DATATYPES as ROS_CAMERA_INFO_DATATYPES,
   IncomingCameraInfo,
   Marker,
   MarkerAction,
@@ -49,7 +52,7 @@ const DEFAULT_COLOR_STR = rgbaToCssString(DEFAULT_COLOR);
 const CAMERA_MODEL = "CameraModel";
 
 const DEFAULT_SETTINGS: LayerSettingsCameraInfo = {
-  visible: true,
+  visible: false,
   frameLocked: true,
   distance: DEFAULT_DISTANCE,
   width: DEFAULT_WIDTH,
@@ -60,30 +63,39 @@ export type CameraInfoUserData = BaseUserData & {
   settings: LayerSettingsCameraInfo;
   topic: string;
   cameraInfo: CameraInfo | undefined;
+  originalMessage: Record<string, RosValue> | undefined;
   cameraModel: PinholeCameraModel | undefined;
   lines: RenderableLineList | undefined;
 };
 
 export class CameraInfoRenderable extends Renderable<CameraInfoUserData> {
-  override dispose(): void {
+  public override dispose(): void {
     this.userData.lines?.dispose();
     super.dispose();
+  }
+
+  public override details(): Record<string, RosValue> {
+    return this.userData.originalMessage ?? {};
   }
 }
 
 export class Cameras extends SceneExtension<CameraInfoRenderable> {
-  constructor(renderer: Renderer) {
+  public constructor(renderer: Renderer) {
     super("foxglove.Cameras", renderer);
 
-    renderer.addDatatypeSubscriptions(CAMERA_INFO_DATATYPES, this.handleCameraInfo);
+    renderer.addDatatypeSubscriptions(ROS_CAMERA_INFO_DATATYPES, this.handleCameraInfo);
+    renderer.addDatatypeSubscriptions(CAMERA_CALIBRATION_DATATYPES, this.handleCameraInfo);
   }
 
-  override settingsNodes(): SettingsTreeEntry[] {
+  public override settingsNodes(): SettingsTreeEntry[] {
     const configTopics = this.renderer.config.topics;
     const handler = this.handleSettingsAction;
     const entries: SettingsTreeEntry[] = [];
     for (const topic of this.renderer.topics ?? []) {
-      if (CAMERA_INFO_DATATYPES.has(topic.datatype)) {
+      if (
+        ROS_CAMERA_INFO_DATATYPES.has(topic.schemaName) ||
+        CAMERA_CALIBRATION_DATATYPES.has(topic.schemaName)
+      ) {
         const config = (configTopics[topic.name] ?? {}) as Partial<LayerSettingsCameraInfo>;
 
         // prettier-ignore
@@ -98,7 +110,7 @@ export class Cameras extends SceneExtension<CameraInfoRenderable> {
           node: {
             icon: "Camera",
             fields,
-            visible: config.visible ?? true,
+            visible: config.visible ?? DEFAULT_SETTINGS.visible,
             handler,
             order: topic.name.toLocaleLowerCase(),
           },
@@ -108,7 +120,7 @@ export class Cameras extends SceneExtension<CameraInfoRenderable> {
     return entries;
   }
 
-  handleSettingsAction = (action: SettingsTreeAction): void => {
+  public override handleSettingsAction = (action: SettingsTreeAction): void => {
     const path = action.payload.path;
     if (action.action !== "update" || path.length !== 3) {
       return;
@@ -120,17 +132,25 @@ export class Cameras extends SceneExtension<CameraInfoRenderable> {
     const topicName = path[1]!;
     const renderable = this.renderables.get(topicName);
     if (renderable) {
-      const { cameraInfo, receiveTime } = renderable.userData;
+      const { cameraInfo, receiveTime, originalMessage } = renderable.userData;
       if (cameraInfo) {
         const settings = this.renderer.config.topics[topicName] as
           | Partial<LayerSettingsCameraInfo>
           | undefined;
-        this._updateCameraInfoRenderable(renderable, cameraInfo, receiveTime, settings);
+        this._updateCameraInfoRenderable(
+          renderable,
+          cameraInfo,
+          originalMessage,
+          receiveTime,
+          settings,
+        );
       }
     }
   };
 
-  handleCameraInfo = (messageEvent: PartialMessageEvent<IncomingCameraInfo>): void => {
+  private handleCameraInfo = (
+    messageEvent: PartialMessageEvent<IncomingCameraInfo | CameraCalibration>,
+  ): void => {
     const topic = messageEvent.topic;
     const cameraInfo = normalizeCameraInfo(messageEvent.message);
     const receiveTime = toNanoSec(messageEvent.receiveTime);
@@ -155,6 +175,7 @@ export class Cameras extends SceneExtension<CameraInfoRenderable> {
         settings,
         topic,
         cameraInfo: undefined,
+        originalMessage: undefined,
         cameraModel: undefined,
         lines: undefined,
       });
@@ -166,6 +187,7 @@ export class Cameras extends SceneExtension<CameraInfoRenderable> {
     this._updateCameraInfoRenderable(
       renderable,
       cameraInfo,
+      messageEvent.message,
       receiveTime,
       renderable.userData.settings,
     );
@@ -174,11 +196,12 @@ export class Cameras extends SceneExtension<CameraInfoRenderable> {
   private _updateCameraInfoRenderable(
     renderable: CameraInfoRenderable,
     cameraInfo: CameraInfo,
+    originalMessage: Record<string, RosValue> | undefined,
     receiveTime: bigint,
     settings: Partial<LayerSettingsCameraInfo> | undefined,
   ): void {
     const prevSettings = renderable.userData.settings;
-    const newSettings = { ...prevSettings, ...settings };
+    const newSettings = { ...DEFAULT_SETTINGS, ...settings };
     const settingsEqual =
       newSettings.color === prevSettings.color &&
       newSettings.distance === prevSettings.distance &&
@@ -195,6 +218,7 @@ export class Cameras extends SceneExtension<CameraInfoRenderable> {
     if (!dataEqual) {
       // log.warn(`CameraInfo changed on topic "${topic}", updating rectification model`);
       renderable.userData.cameraInfo = cameraInfo;
+      renderable.userData.originalMessage = originalMessage;
 
       if (cameraInfo.P.length === 12) {
         try {
@@ -426,7 +450,9 @@ function normalizeRegionOfInterest(
   };
 }
 
-function normalizeCameraInfo(message: PartialMessage<IncomingCameraInfo>): CameraInfo {
+function normalizeCameraInfo(
+  message: PartialMessage<IncomingCameraInfo> & PartialMessage<CameraCalibration>,
+): CameraInfo {
   // Handle lowercase field names as well (ROS2 compatibility)
   const D = message.D ?? message.d;
   const K = message.K ?? message.k;
@@ -439,7 +465,10 @@ function normalizeCameraInfo(message: PartialMessage<IncomingCameraInfo>): Camer
   const Plen = P?.length ?? 0;
 
   return {
-    header: normalizeHeader(message.header),
+    header:
+      "timestamp" in message
+        ? { stamp: normalizeTime(message.timestamp), frame_id: message.frame_id ?? "" }
+        : normalizeHeader(message.header),
     height: message.height ?? 0,
     width: message.width ?? 0,
     distortion_model: message.distortion_model ?? "",

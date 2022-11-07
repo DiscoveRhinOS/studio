@@ -2,12 +2,19 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { MessageEvent, Topic } from "@foxglove/studio";
+import { MessageEvent } from "@foxglove/studio";
+import { Topic } from "@foxglove/studio-base/players/types";
 import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
 
 import ThreeDeeRender from "../index";
 import { PoseStamped, PoseWithCovarianceStamped, TransformStamped } from "../ros";
-import { BASE_LINK_FRAME_ID, FIXED_FRAME_ID, QUAT_IDENTITY, SENSOR_FRAME_ID } from "./common";
+import {
+  BASE_LINK_FRAME_ID,
+  FIXED_FRAME_ID,
+  QUAT_IDENTITY,
+  rad2deg,
+  SENSOR_FRAME_ID,
+} from "./common";
 import useDelayedFixture from "./useDelayedFixture";
 
 export default {
@@ -18,11 +25,11 @@ export default {
 PoseMarkers.parameters = { colorScheme: "dark" };
 export function PoseMarkers(): JSX.Element {
   const topics: Topic[] = [
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
-    { name: "/pose", datatype: "geometry_msgs/PoseStamped" },
-    { name: "/pose_with_covariance", datatype: "geometry_msgs/PoseWithCovarianceStamped" },
-    { name: "/pose_with_hidden_covariance", datatype: "geometry_msgs/PoseWithCovarianceStamped" },
-    { name: "/pose_axis_with_covariance", datatype: "geometry_msgs/PoseWithCovarianceStamped" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
+    { name: "/pose", schemaName: "geometry_msgs/PoseStamped" },
+    { name: "/pose_with_covariance", schemaName: "geometry_msgs/PoseWithCovarianceStamped" },
+    { name: "/pose_with_hidden_covariance", schemaName: "geometry_msgs/PoseWithCovarianceStamped" },
+    { name: "/pose_axis_with_covariance", schemaName: "geometry_msgs/PoseWithCovarianceStamped" },
   ];
 
   const tf1: MessageEvent<TransformStamped> = {
@@ -36,6 +43,7 @@ export function PoseMarkers(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf2: MessageEvent<TransformStamped> = {
@@ -49,6 +57,7 @@ export function PoseMarkers(): JSX.Element {
         rotation: { x: 0.383, y: 0, z: 0, w: 0.924 },
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -62,6 +71,7 @@ export function PoseMarkers(): JSX.Element {
         orientation: { x: 0, y: -Math.SQRT1_2, z: 0, w: Math.SQRT1_2 },
       },
     },
+    schemaName: "geometry_msgs/PoseStamped",
     sizeInBytes: 0,
   };
 
@@ -86,6 +96,7 @@ export function PoseMarkers(): JSX.Element {
         ],
       },
     },
+    schemaName: "geometry_msgs/PoseWithCovarianceStamped",
     sizeInBytes: 0,
   };
 
@@ -110,6 +121,7 @@ export function PoseMarkers(): JSX.Element {
         ],
       },
     },
+    schemaName: "geometry_msgs/PoseWithCovarianceStamped",
     sizeInBytes: 0,
   };
 
@@ -134,6 +146,7 @@ export function PoseMarkers(): JSX.Element {
         ],
       },
     },
+    schemaName: "geometry_msgs/PoseWithCovarianceStamped",
     sizeInBytes: 0,
   };
 
@@ -161,10 +174,10 @@ export function PoseMarkers(): JSX.Element {
           cameraState: {
             distance: 4,
             perspective: true,
-            phi: 1,
+            phi: rad2deg(1),
             targetOffset: [-0.6, 0.5, 0],
-            thetaOffset: -1,
-            fovy: 0.75,
+            thetaOffset: rad2deg(-1),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
@@ -172,18 +185,23 @@ export function PoseMarkers(): JSX.Element {
           },
           topics: {
             "/pose": {
+              visible: true,
               type: "arrow",
               color: "rgba(107, 220, 255, 0.5)",
             },
             "/pose_with_covariance": {
+              visible: true,
               type: "arrow",
             },
             "/pose_with_hidden_covariance": {
+              visible: true,
               type: "arrow",
               showCovariance: false,
               covarianceColor: "rgba(255, 0, 0, 1)",
             },
-            // "/pose_axis_with_covariance": {}, // Default settings
+            "/pose_axis_with_covariance": {
+              visible: true,
+            },
           },
         }}
       />

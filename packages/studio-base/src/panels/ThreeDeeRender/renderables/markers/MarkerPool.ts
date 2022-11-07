@@ -39,9 +39,9 @@ const CONSTRUCTORS = {
 export class MarkerPool {
   private renderablesByType = new Map<MarkerType, RenderableMarker[]>();
 
-  constructor(private renderer: Renderer) {}
+  public constructor(private renderer: Renderer) {}
 
-  acquire<T extends MarkerType>(
+  public acquire<T extends MarkerType>(
     type: T,
     topic: string,
     marker: Marker,
@@ -51,7 +51,7 @@ export class MarkerPool {
     if (renderables) {
       const renderable = renderables.pop();
       if (renderable) {
-        renderable.userData.settingsPath = ["topics", topic, marker.ns, String(marker.id)];
+        renderable.userData.settingsPath = ["topics", topic];
         renderable.userData.settings = { visible: true, frameLocked: marker.frame_locked };
         renderable.userData.topic = topic;
         renderable.update(marker, receiveTime);
@@ -62,7 +62,7 @@ export class MarkerPool {
     return renderable;
   }
 
-  release(renderable: RenderableMarker): void {
+  public release(renderable: RenderableMarker): void {
     const type = renderable.userData.marker.type as MarkerType;
     const renderables = this.renderablesByType.get(type);
     if (!renderables) {
@@ -72,7 +72,7 @@ export class MarkerPool {
     }
   }
 
-  dispose(): void {
+  public dispose(): void {
     for (const renderables of this.renderablesByType.values()) {
       for (const renderable of renderables) {
         renderable.dispose();

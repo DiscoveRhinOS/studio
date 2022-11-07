@@ -13,10 +13,10 @@
 //   You may not use this file except in compliance with the License.
 
 import { renderHook } from "@testing-library/react-hooks";
-import { PropsWithChildren } from "react";
 
 import { MessageEvent } from "@foxglove/studio";
 import MockMessagePipelineProvider from "@foxglove/studio-base/components/MessagePipeline/MockMessagePipelineProvider";
+import { Topic } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
 import useFrame from "./useFrame";
@@ -27,45 +27,48 @@ const datatypes: RosDatatypes = new Map(
   }),
 );
 
-const messageEventFixtures = [
+const messageEventFixtures: MessageEvent<unknown>[] = [
   {
     topic: "/some/topic",
     receiveTime: { sec: 100, nsec: 0 },
     message: { index: 0 },
+    schemaName: "some/topic",
     sizeInBytes: 0,
   },
   {
     topic: "/some/topic",
     receiveTime: { sec: 101, nsec: 0 },
     message: { index: 1 },
+    schemaName: "some/topic",
     sizeInBytes: 0,
   },
   {
     topic: "/some/topic",
     receiveTime: { sec: 102, nsec: 0 },
     message: { index: 2 },
+    schemaName: "some/topic",
     sizeInBytes: 0,
   },
-] as const;
-
-type WrapperProps = PropsWithChildren<{ messages: MessageEvent<unknown>[] }>;
+];
 
 describe("useFrame", () => {
   it("should pass in a frame of messages", () => {
-    const topics = [
-      { name: "/some/topic", datatype: "some/topic" },
-      { name: "/foo", datatype: "foo_msgs/Foo" },
+    const topics: Topic[] = [
+      { name: "/some/topic", schemaName: "some/topic" },
+      { name: "/foo", schemaName: "foo_msgs/Foo" },
     ];
 
-    const { result, rerender } = renderHook(
+    const all: ReturnType<typeof useFrame>[] = [];
+
+    const messages = [messageEventFixtures[0]!];
+    const { rerender } = renderHook(
       () => {
-        return useFrame(["/some/topic"]);
+        const value = useFrame(["/some/topic"]);
+        all.push(value);
+        return value;
       },
       {
-        initialProps: {
-          messages: [messageEventFixtures[0]],
-        },
-        wrapper({ children, messages }: WrapperProps) {
+        wrapper({ children }) {
           return (
             <MockMessagePipelineProvider messages={messages} datatypes={datatypes} topics={topics}>
               {children}
@@ -75,7 +78,7 @@ describe("useFrame", () => {
       },
     );
 
-    expect(result.all).toEqual([
+    expect(all).toEqual<typeof all>([
       { reset: true, frame: {} },
       {
         reset: false,
@@ -85,6 +88,7 @@ describe("useFrame", () => {
               topic: "/some/topic",
               receiveTime: { sec: 100, nsec: 0 },
               message: { index: 0 },
+              schemaName: "some/topic",
               sizeInBytes: 0,
             },
           ],
@@ -93,7 +97,7 @@ describe("useFrame", () => {
     ]);
     // re-render keeps reset value since no new messages have been fed in
     rerender();
-    expect(result.all).toEqual([
+    expect(all).toEqual<typeof all>([
       { reset: true, frame: {} },
       {
         reset: false,
@@ -103,6 +107,7 @@ describe("useFrame", () => {
               topic: "/some/topic",
               receiveTime: { sec: 100, nsec: 0 },
               message: { index: 0 },
+              schemaName: "some/topic",
               sizeInBytes: 0,
             },
           ],
@@ -116,32 +121,32 @@ describe("useFrame", () => {
               topic: "/some/topic",
               receiveTime: { sec: 100, nsec: 0 },
               message: { index: 0 },
+              schemaName: "some/topic",
               sizeInBytes: 0,
             },
           ],
         },
       },
     ]);
-    expect((result.all[1]! as Record<string, unknown>).frame).toBe(
-      (result.all[2]! as Record<string, unknown>).frame,
-    );
+    expect(all[1]!.frame).toBe(all[2]!.frame);
   });
 
   it("should pass in another frame of messages", () => {
-    const topics = [
-      { name: "/some/topic", datatype: "some/topic" },
-      { name: "/foo", datatype: "foo_msgs/Foo" },
+    const topics: Topic[] = [
+      { name: "/some/topic", schemaName: "some/topic" },
+      { name: "/foo", schemaName: "foo_msgs/Foo" },
     ];
 
-    const { result, rerender } = renderHook(
+    const all: ReturnType<typeof useFrame>[] = [];
+    let messages: MessageEvent<unknown>[] = [messageEventFixtures[0]!];
+    const { rerender } = renderHook(
       () => {
-        return useFrame(["/some/topic"]);
+        const value = useFrame(["/some/topic"]);
+        all.push(value);
+        return value;
       },
       {
-        initialProps: {
-          messages: [messageEventFixtures[0]],
-        },
-        wrapper({ children, messages }: WrapperProps) {
+        wrapper({ children }) {
           return (
             <MockMessagePipelineProvider messages={messages} datatypes={datatypes} topics={topics}>
               {children}
@@ -150,7 +155,7 @@ describe("useFrame", () => {
         },
       },
     );
-    expect(result.all).toEqual([
+    expect(all).toEqual<typeof all>([
       { reset: true, frame: {} },
       {
         reset: false,
@@ -160,6 +165,7 @@ describe("useFrame", () => {
               topic: "/some/topic",
               receiveTime: { sec: 100, nsec: 0 },
               message: { index: 0 },
+              schemaName: "some/topic",
               sizeInBytes: 0,
             },
           ],
@@ -167,9 +173,10 @@ describe("useFrame", () => {
       },
     ]);
 
-    rerender({ messages: [messageEventFixtures[1]] });
+    messages = [messageEventFixtures[1]!];
+    rerender();
 
-    expect(result.all).toEqual([
+    expect(all).toEqual<typeof all>([
       { reset: true, frame: {} },
       {
         reset: false,
@@ -179,6 +186,21 @@ describe("useFrame", () => {
               topic: "/some/topic",
               receiveTime: { sec: 100, nsec: 0 },
               message: { index: 0 },
+              schemaName: "some/topic",
+              sizeInBytes: 0,
+            },
+          ],
+        },
+      },
+      {
+        reset: false,
+        frame: {
+          "/some/topic": [
+            {
+              topic: "/some/topic",
+              receiveTime: { sec: 100, nsec: 0 },
+              message: { index: 0 },
+              schemaName: "some/topic",
               sizeInBytes: 0,
             },
           ],
@@ -193,6 +215,7 @@ describe("useFrame", () => {
               topic: "/some/topic",
               receiveTime: { sec: 101, nsec: 0 },
               message: { index: 1 },
+              schemaName: "some/topic",
               sizeInBytes: 0,
             },
           ],

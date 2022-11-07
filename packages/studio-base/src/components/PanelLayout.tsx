@@ -13,21 +13,21 @@
 
 import { CircularProgress, Link, styled as muiStyled } from "@mui/material";
 import React, {
-  useCallback,
-  useMemo,
+  LazyExoticComponent,
   PropsWithChildren,
   Suspense,
-  useRef,
-  LazyExoticComponent,
+  useCallback,
   useEffect,
+  useMemo,
+  useRef,
 } from "react";
 import { useDrop } from "react-dnd";
 import {
-  MosaicWithoutDragDropContext,
-  MosaicWindow,
   MosaicDragType,
   MosaicNode,
   MosaicPath,
+  MosaicWindow,
+  MosaicWithoutDragDropContext,
 } from "react-mosaic-component";
 import "react-mosaic-component/react-mosaic-component.css";
 
@@ -41,12 +41,15 @@ import {
   useCurrentLayoutSelector,
   usePanelMosaicId,
 } from "@foxglove/studio-base/context/CurrentLayoutContext";
+import { useExtensionCatalog } from "@foxglove/studio-base/context/ExtensionCatalogContext";
 import { PanelComponent, usePanelCatalog } from "@foxglove/studio-base/context/PanelCatalogContext";
 import { useWorkspace } from "@foxglove/studio-base/context/WorkspaceContext";
 import { MosaicDropResult, PanelConfig } from "@foxglove/studio-base/types/panels";
 import { getPanelIdForType, getPanelTypeFromId } from "@foxglove/studio-base/util/layout";
 
 import ErrorBoundary from "./ErrorBoundary";
+import { MosaicPathContext } from "./MosaicPathContext";
+import { PanelRemounter } from "./PanelRemounter";
 
 type Props = {
   layout?: MosaicNode<string>;
@@ -137,18 +140,17 @@ export function UnconnectedPanelLayout(props: Props): React.ReactElement {
         Panel = panelInfo
           ? React.lazy(panelInfo.module)
           : () => (
-              <Stack flex="auto" alignItems="center" justifyContent="center" data-test={id}>
+              <Stack flex="auto" alignItems="center" justifyContent="center" data-testid={id}>
                 <PanelToolbar isUnknownPanel />
                 <EmptyState>Unknown panel type: {type}.</EmptyState>
               </Stack>
             );
-        panelComponentCache.current.set(type, Panel);
+
+        if (panelInfo) {
+          panelComponentCache.current.set(type, Panel);
+        }
       }
 
-      // When a panel changes from being the only panel to one of many in a layout and
-      // is no longer the top level panel we need to force it to update to recalculate
-      // whether it should be draggable or not. Since the panel component is memoized we use
-      // a key to break through the memoization when the panel's layout path changes.
       const mosaicWindow = (
         <MosaicWindow
           title=""
@@ -164,7 +166,11 @@ export function UnconnectedPanelLayout(props: Props): React.ReactElement {
               </EmptyState>
             }
           >
-            <Panel childId={id} tabId={tabId} key={`${id}${tabId}${path.length}`} />
+            <MosaicPathContext.Provider value={path}>
+              <PanelRemounter id={id} tabId={tabId}>
+                <Panel childId={id} tabId={tabId} />
+              </PanelRemounter>
+            </MosaicPathContext.Provider>
           </Suspense>
         </MosaicWindow>
       );
@@ -175,6 +181,7 @@ export function UnconnectedPanelLayout(props: Props): React.ReactElement {
     },
     [createTile, tabId, panelCatalog],
   );
+
   const bodyToRender = useMemo(
     () =>
       layout != undefined ? (
@@ -195,6 +202,14 @@ export function UnconnectedPanelLayout(props: Props): React.ReactElement {
   return <ErrorBoundary>{bodyToRender}</ErrorBoundary>;
 }
 
+function LoadingState(): JSX.Element {
+  return (
+    <EmptyState>
+      <CircularProgress size={28} />
+    </EmptyState>
+  );
+}
+
 const selectedLayoutLoadingSelector = (state: LayoutState) => state.selectedLayout?.loading;
 const selectedLayoutExistsSelector = (state: LayoutState) =>
   state.selectedLayout?.data != undefined;
@@ -206,6 +221,7 @@ export default function PanelLayout(): JSX.Element {
   const layoutExists = useCurrentLayoutSelector(selectedLayoutExistsSelector);
   const layoutLoading = useCurrentLayoutSelector(selectedLayoutLoadingSelector);
   const mosaicLayout = useCurrentLayoutSelector(selectedLayoutMosaicSelector);
+  const registeredExtensions = useExtensionCatalog((state) => state.installedExtensions);
 
   const onChange = useCallback(
     (newLayout: MosaicNode<string> | undefined) => {
@@ -215,22 +231,25 @@ export default function PanelLayout(): JSX.Element {
     },
     [changePanelLayout],
   );
+
+  if (registeredExtensions == undefined) {
+    return <LoadingState />;
+  }
+
   if (layoutExists) {
     return <UnconnectedPanelLayout layout={mosaicLayout} onChange={onChange} />;
-  } else if (layoutLoading === true) {
-    return (
-      <EmptyState>
-        <CircularProgress size={28} />
-      </EmptyState>
-    );
-  } else {
-    return (
-      <EmptyState>
-        <Link onClick={openLayoutBrowser} underline="hover">
-          Select a layout
-        </Link>{" "}
-        in the sidebar to get started!
-      </EmptyState>
-    );
   }
+
+  if (layoutLoading === true) {
+    return <LoadingState />;
+  }
+
+  return (
+    <EmptyState>
+      <Link onClick={openLayoutBrowser} underline="hover">
+        Select a layout
+      </Link>{" "}
+      in the sidebar to get started!
+    </EmptyState>
+  );
 }

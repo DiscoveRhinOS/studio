@@ -5,12 +5,13 @@
 import * as THREE from "three";
 
 import { fromSec } from "@foxglove/rostime";
-import { MessageEvent, Topic } from "@foxglove/studio";
+import { MessageEvent } from "@foxglove/studio";
+import { Topic } from "@foxglove/studio-base/players/types";
 import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
 
 import ThreeDeeRender from "../index";
 import { LaserScan, PointCloud2, TransformStamped } from "../ros";
-import { QUAT_IDENTITY } from "./common";
+import { QUAT_IDENTITY, rad2deg } from "./common";
 import useDelayedFixture from "./useDelayedFixture";
 
 export default {
@@ -31,8 +32,8 @@ function SensorMsgs_LaserScan({
   settings: Record<string, unknown>;
 }): JSX.Element {
   const topics: Topic[] = [
-    { name: "/scan", datatype: "sensor_msgs/LaserScan" },
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
+    { name: "/scan", schemaName: "sensor_msgs/LaserScan" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
   ];
   const tf1: MessageEvent<TransformStamped> = {
     topic: "/tf",
@@ -45,6 +46,7 @@ function SensorMsgs_LaserScan({
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf2: MessageEvent<TransformStamped> = {
@@ -58,6 +60,7 @@ function SensorMsgs_LaserScan({
         rotation: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2),
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf3: MessageEvent<TransformStamped> = {
@@ -71,6 +74,7 @@ function SensorMsgs_LaserScan({
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -99,6 +103,7 @@ function SensorMsgs_LaserScan({
       ranges,
       intensities,
     },
+    schemaName: "sensor_msgs/LaserScan",
     sizeInBytes: 0,
   };
 
@@ -122,6 +127,7 @@ function SensorMsgs_LaserScan({
           scene: { enableStats: false },
           topics: {
             "/scan": {
+              visible: true,
               pointSize: 10,
               colorMode: "colormap",
               colorMap: "turbo",
@@ -135,10 +141,10 @@ function SensorMsgs_LaserScan({
           cameraState: {
             distance: 13.5,
             perspective: true,
-            phi: 1.22,
+            phi: rad2deg(1.22),
             targetOffset: [0.25, -0.5, 0],
-            thetaOffset: -0.33,
-            fovy: 0.75,
+            thetaOffset: rad2deg(-0.33),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
@@ -211,9 +217,9 @@ export const Time10 = Object.assign(SensorMsgs_LaserScan.bind({}), {
 
 export function ComparisonWithPointCloudColors(): JSX.Element {
   const topics: Topic[] = [
-    { name: "/scan", datatype: "sensor_msgs/LaserScan" },
-    { name: "/cloud", datatype: "sensor_msgs/PointCloud2" },
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
+    { name: "/scan", schemaName: "sensor_msgs/LaserScan" },
+    { name: "/cloud", schemaName: "sensor_msgs/PointCloud2" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
   ];
   const tf1: MessageEvent<TransformStamped> = {
     topic: "/tf",
@@ -226,6 +232,7 @@ export function ComparisonWithPointCloudColors(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -262,6 +269,7 @@ export function ComparisonWithPointCloudColors(): JSX.Element {
       ranges,
       intensities,
     },
+    schemaName: "sensor_msgs/LaserScan",
     sizeInBytes: 0,
   };
 
@@ -288,6 +296,7 @@ export function ComparisonWithPointCloudColors(): JSX.Element {
       ),
       is_dense: true,
     },
+    schemaName: "sensor_msgs/PointCloud2",
     sizeInBytes: 0,
   };
 
@@ -312,12 +321,14 @@ export function ComparisonWithPointCloudColors(): JSX.Element {
           scene: { enableStats: false },
           topics: {
             "/scan": {
+              visible: true,
               pointSize: 10,
               colorMode: "colormap",
               colorMap: "turbo",
               colorField: "intensity",
             },
             "/cloud": {
+              visible: true,
               pointSize: 10,
               colorMode: "colormap",
               colorMap: "turbo",
@@ -330,10 +341,10 @@ export function ComparisonWithPointCloudColors(): JSX.Element {
           cameraState: {
             distance: 5,
             perspective: false,
-            phi: 0,
+            phi: rad2deg(0),
             targetOffset: [0, 1, 0],
-            thetaOffset: 0,
-            fovy: 0.75,
+            thetaOffset: rad2deg(0),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],

@@ -11,9 +11,9 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { makeStyles } from "@fluentui/react";
 import { take } from "lodash";
 import { PropsWithChildren, useMemo } from "react";
+import { makeStyles } from "tss-react/mui";
 
 import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
@@ -25,28 +25,27 @@ type Props = {
   multiDataset: boolean;
 };
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles()((theme) => ({
   root: {
+    display: "flex",
+    flexDirection: "column",
     fontFamily: fonts.MONOSPACE,
-    fontSize: 11,
-    lineHeight: "1.4",
+    fontSize: theme.typography.caption.fontSize,
+    lineHeight: theme.typography.caption.lineHeight,
     overflowWrap: "break-word",
   },
-  multiValueItem: {
-    paddingBottom: theme.spacing.s2,
-  },
   overflow: {
-    color: theme.palette.neutralTertiaryAlt,
+    opacity: theme.palette.action.disabledOpacity,
     fontStyle: "italic",
   },
   path: {
+    opacity: 0.6,
     whiteSpace: "nowrap",
-    color: theme.palette.neutralTertiary,
   },
 }));
 
 function OverflowMessage() {
-  const classes = useStyles();
+  const { classes } = useStyles();
 
   return <div className={classes.overflow}>&lt;multiple values under cursor&gt;</div>;
 }
@@ -55,7 +54,7 @@ export default function TimeBasedChartTooltipContent(
   props: PropsWithChildren<Props>,
 ): React.ReactElement {
   const { content, multiDataset } = props;
-  const classes = useStyles();
+  const { classes } = useStyles();
 
   const itemsByPath = useMemo(() => {
     const out = new Map<string, TimeBasedChartTooltipData[]>();
@@ -83,7 +82,7 @@ export default function TimeBasedChartTooltipContent(
   // not include all datasets
   if (!multiDataset) {
     return (
-      <div className={classes.root} data-test="TimeBasedChartTooltipContent">
+      <div className={classes.root} data-testid="TimeBasedChartTooltipContent">
         {take(content, 1).map((item, idx) => {
           const value =
             typeof item.value === "string"
@@ -104,10 +103,10 @@ export default function TimeBasedChartTooltipContent(
   }
 
   return (
-    <div className={classes.root} data-test="TimeBasedChartTooltipContent">
+    <div className={classes.root} data-testid="TimeBasedChartTooltipContent">
       {Array.from(itemsByPath.out.entries(), ([path, items], idx) => {
         return (
-          <div key={idx} className={classes.multiValueItem}>
+          <div key={idx}>
             <div className={classes.path}>{path}</div>
             {take(items, 1).map((item, itemIdx) => {
               const value =

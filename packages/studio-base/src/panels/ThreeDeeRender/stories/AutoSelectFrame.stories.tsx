@@ -2,7 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { MessageEvent, Topic } from "@foxglove/studio";
+import { MessageEvent } from "@foxglove/studio";
+import { Topic } from "@foxglove/studio-base/players/types";
 import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
 
 import ThreeDeeRender from "../index";
@@ -12,6 +13,7 @@ import {
   FIXED_FRAME_ID,
   makeColor,
   QUAT_IDENTITY,
+  rad2deg,
   SENSOR_FRAME_ID,
 } from "./common";
 import useDelayedFixture from "./useDelayedFixture";
@@ -24,8 +26,8 @@ export default {
 AutoSelectFrame.parameters = { colorScheme: "dark" };
 export function AutoSelectFrame(): JSX.Element {
   const topics: Topic[] = [
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
-    { name: "/markers", datatype: "visualization_msgs/Marker" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
+    { name: "/markers", schemaName: "visualization_msgs/Marker" },
   ];
 
   const tf1: MessageEvent<TransformStamped> = {
@@ -39,6 +41,7 @@ export function AutoSelectFrame(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf2: MessageEvent<TransformStamped> = {
@@ -52,6 +55,7 @@ export function AutoSelectFrame(): JSX.Element {
         rotation: { x: 0.383, y: 0, z: 0, w: 0.924 },
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -73,6 +77,7 @@ export function AutoSelectFrame(): JSX.Element {
       color: makeColor("#4caf50", 0.5),
       lifetime: { sec: 0, nsec: 0 },
     },
+    schemaName: "visualization_msgs/Marker",
     sizeInBytes: 0,
   };
 
@@ -80,7 +85,7 @@ export function AutoSelectFrame(): JSX.Element {
     topics,
     frame: {
       "/tf": [tf1, tf2],
-      "/arrows": [arrow],
+      "/markers": [arrow],
     },
     capabilities: [],
     activeData: {
@@ -97,14 +102,17 @@ export function AutoSelectFrame(): JSX.Element {
           cameraState: {
             distance: 4,
             perspective: true,
-            phi: 1,
+            phi: rad2deg(1),
             targetOffset: [-0.6, 0.5, 0],
-            thetaOffset: -1,
-            fovy: 0.75,
+            thetaOffset: rad2deg(-1),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
             targetOrientation: [0, 0, 0, 1],
+          },
+          topics: {
+            "/markers": { visible: true },
           },
         }}
       />

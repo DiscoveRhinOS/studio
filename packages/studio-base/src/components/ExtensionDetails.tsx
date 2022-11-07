@@ -13,8 +13,8 @@ import {
   Divider,
   styled as muiStyled,
 } from "@mui/material";
+import { useSnackbar } from "notistack";
 import { useCallback, useState } from "react";
-import { useToasts } from "react-toast-notifications";
 import { useAsync, useMountedState } from "react-use";
 import { DeepReadonly } from "ts-essentials";
 
@@ -22,11 +22,11 @@ import { SidebarContent } from "@foxglove/studio-base/components/SidebarContent"
 import Stack from "@foxglove/studio-base/components/Stack";
 import TextContent from "@foxglove/studio-base/components/TextContent";
 import { useAnalytics } from "@foxglove/studio-base/context/AnalyticsContext";
+import { useExtensionCatalog } from "@foxglove/studio-base/context/ExtensionCatalogContext";
 import {
   ExtensionMarketplaceDetail,
   useExtensionMarketplace,
 } from "@foxglove/studio-base/context/ExtensionMarketplaceContext";
-import { useExtensionRegistry } from "@foxglove/studio-base/context/ExtensionRegistryContext";
 import { AppEvent } from "@foxglove/studio-base/services/IAnalytics";
 import isDesktopApp from "@foxglove/studio-base/util/isDesktopApp";
 
@@ -42,12 +42,15 @@ export function ExtensionDetails({ extension, onClose, installed }: Props): Reac
   const [isInstalled, setIsInstalled] = useState(installed);
   const [activeTab, setActiveTab] = useState<number>(0);
   const isMounted = useMountedState();
-  const extensionRegistry = useExtensionRegistry();
+  const downloadExtension = useExtensionCatalog((state) => state.downloadExtension);
+  const installExtension = useExtensionCatalog((state) => state.installExtension);
+  const uninstallExtension = useExtensionCatalog((state) => state.uninstallExtension);
   const marketplace = useExtensionMarketplace();
-  const { addToast } = useToasts();
+  const { enqueueSnackbar } = useSnackbar();
   const readmeUrl = extension.readme;
   const changelogUrl = extension.changelog;
   const canInstall = extension.foxe != undefined;
+  const canUninstall = extension.namespace !== "org";
 
   const { value: readmeContent } = useAsync(
     async () => (readmeUrl != undefined ? await marketplace.getMarkdown(readmeUrl) : ""),
@@ -62,7 +65,9 @@ export function ExtensionDetails({ extension, onClose, installed }: Props): Reac
 
   const install = useCallback(async () => {
     if (!isDesktopApp()) {
-      addToast("Download the desktop app to use marketplace extensions.", { appearance: "error" });
+      enqueueSnackbar("Download the desktop app to use marketplace extensions.", {
+        variant: "error",
+      });
       return;
     }
 
@@ -71,33 +76,40 @@ export function ExtensionDetails({ extension, onClose, installed }: Props): Reac
       if (url == undefined) {
         throw new Error(`Cannot install extension ${extension.id}, "foxe" URL is missing`);
       }
-      const data = await extensionRegistry.downloadExtension(url);
-      await extensionRegistry.installExtension("local", data);
+      const data = await downloadExtension(url);
+      await installExtension("local", data);
       if (isMounted()) {
         setIsInstalled(true);
         void analytics.logEvent(AppEvent.EXTENSION_INSTALL, { type: extension.id });
       }
     } catch (err) {
-      addToast(`Failed to download extension ${extension.id}. ${err.message}`, {
-        appearance: "error",
+      enqueueSnackbar(`Failed to download extension ${extension.id}. ${err.message}`, {
+        variant: "error",
       });
     }
-  }, [addToast, analytics, extension.foxe, extension.id, extensionRegistry, isMounted]);
+  }, [
+    analytics,
+    downloadExtension,
+    enqueueSnackbar,
+    extension.foxe,
+    extension.id,
+    installExtension,
+    isMounted,
+  ]);
 
   const uninstall = useCallback(async () => {
-    await extensionRegistry.uninstallExtension(extension.id);
+    await uninstallExtension(extension.namespace ?? "local", extension.id);
     if (isMounted()) {
       setIsInstalled(false);
       void analytics.logEvent(AppEvent.EXTENSION_UNINSTALL, { type: extension.id });
     }
-  }, [analytics, extension.id, extensionRegistry, isMounted]);
+  }, [analytics, extension.id, extension.namespace, isMounted, uninstallExtension]);
 
   return (
     <SidebarContent
       title={extension.name}
       leadingItems={[
-        // eslint-disable-next-line react/jsx-key
-        <IconButton onClick={onClose} color="primary" edge="start">
+        <IconButton key="back-arrow" onClick={onClose} size="small" edge="start">
           <ChevronLeftIcon />
         </IconButton>,
       ]}
@@ -123,7 +135,7 @@ export function ExtensionDetails({ extension, onClose, installed }: Props): Reac
             {extension.description}
           </Typography>
         </Stack>
-        {isInstalled ? (
+        {isInstalled && canUninstall ? (
           <StyledButton
             size="small"
             key="uninstall"

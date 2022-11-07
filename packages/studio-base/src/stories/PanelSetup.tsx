@@ -11,7 +11,8 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { setWarningCallback, useTheme } from "@fluentui/react";
+import { setWarningCallback } from "@fluentui/react";
+import { useTheme } from "@mui/material";
 import { flatten } from "lodash";
 import { ComponentProps, ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { DndProvider } from "react-dnd";
@@ -31,11 +32,11 @@ import {
   useSelectedPanels,
 } from "@foxglove/studio-base/context/CurrentLayoutContext";
 import { PanelsActions } from "@foxglove/studio-base/context/CurrentLayoutContext/actions";
-import { HoverValueProvider } from "@foxglove/studio-base/context/HoverValueContext";
 import PanelCatalogContext, {
   PanelCatalog,
   PanelInfo,
 } from "@foxglove/studio-base/context/PanelCatalogContext";
+import { usePanelSettingsEditorStore } from "@foxglove/studio-base/context/PanelSettingsEditorContext";
 import {
   UserNodeStateProvider,
   useUserNodeState,
@@ -51,16 +52,17 @@ import {
   AdvertiseOptions,
 } from "@foxglove/studio-base/players/types";
 import MockCurrentLayoutProvider from "@foxglove/studio-base/providers/CurrentLayoutProvider/MockCurrentLayoutProvider";
+import ExtensionCatalogProvider from "@foxglove/studio-base/providers/ExtensionCatalogProvider";
 import HelpInfoProvider from "@foxglove/studio-base/providers/HelpInfoProvider";
-import {
-  PanelSettingsEditorContextProvider,
-  usePanelSettingsEditorStore,
-} from "@foxglove/studio-base/providers/PanelSettingsEditorContextProvider";
+import { PanelSettingsEditorContextProvider } from "@foxglove/studio-base/providers/PanelSettingsEditorContextProvider";
+import TimelineInteractionStateProvider from "@foxglove/studio-base/providers/TimelineInteractionStateProvider";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { SavedProps, UserNodes } from "@foxglove/studio-base/types/panels";
 
 const log = Logger.getLogger(__filename);
+
+function noop() {}
 
 type Frame = {
   [topic: string]: MessageEvent<unknown>[];
@@ -77,6 +79,7 @@ export type Fixture = {
   frame?: Frame;
   topics?: Topic[];
   capabilities?: string[];
+  profile?: string;
   activeData?: Partial<PlayerStateActiveData>;
   progress?: Progress;
   datatypes?: RosDatatypes;
@@ -108,6 +111,8 @@ type UnconnectedProps = {
   ) => void;
   onFirstMount?: (arg0: HTMLDivElement) => void;
   style?: React.CSSProperties;
+  // Needed for functionality not in React.CSSProperties, like child selectors: "& > *"
+  className?: string;
 };
 
 function setNativeValue(element: unknown, value: unknown) {
@@ -164,10 +169,10 @@ export const MosaicWrapper = ({ children }: { children: React.ReactNode }): JSX.
 
 // empty catalog if one is not provided via props
 class MockPanelCatalog implements PanelCatalog {
-  getPanels(): readonly PanelInfo[] {
+  public getPanels(): readonly PanelInfo[] {
     return [];
   }
-  getPanelByType(_type: string): PanelInfo | undefined {
+  public getPanelByType(_type: string): PanelInfo | undefined {
     return undefined;
   }
 }
@@ -264,6 +269,7 @@ function UnconnectedPanelSetup(props: UnconnectedProps): JSX.Element | ReactNull
     topics = [],
     datatypes,
     capabilities,
+    profile,
     activeData,
     progress,
     publish,
@@ -273,8 +279,8 @@ function UnconnectedPanelSetup(props: UnconnectedProps): JSX.Element | ReactNull
   let dTypes = datatypes;
   if (!dTypes) {
     const dummyDatatypes: RosDatatypes = new Map();
-    for (const { datatype } of topics) {
-      dummyDatatypes.set(datatype, { definitions: [] });
+    for (const { schemaName } of topics) {
+      dummyDatatypes.set(schemaName, { definitions: [] });
     }
     dTypes = dummyDatatypes;
   }
@@ -283,6 +289,7 @@ function UnconnectedPanelSetup(props: UnconnectedProps): JSX.Element | ReactNull
   const inner = (
     <div
       style={{ width: "100%", height: "100%", display: "flex", ...props.style }}
+      className={props.className}
       ref={(el) => {
         const { onFirstMount, onMount } = props;
         if (el && onFirstMount && !hasMounted.current) {
@@ -300,9 +307,13 @@ function UnconnectedPanelSetup(props: UnconnectedProps): JSX.Element | ReactNull
         datatypes={dTypes}
         messages={allData}
         pauseFrame={props.pauseFrame}
+        profile={profile}
         activeData={activeData}
         progress={progress}
         publish={publish}
+        startPlayback={noop}
+        pausePlayback={noop}
+        seekPlayback={noop}
         setPublishers={setPublishers}
         setSubscriptions={setSubscriptions}
       >
@@ -333,17 +344,19 @@ export default function PanelSetup(props: Props): JSX.Element {
   const theme = useTheme();
   return (
     <UserNodeStateProvider>
-      <HoverValueProvider>
+      <TimelineInteractionStateProvider>
         <MockCurrentLayoutProvider onAction={props.onLayoutAction}>
           <PanelSettingsEditorContextProvider>
-            <HelpInfoProvider>
-              <ThemeProvider isDark={theme.isInverted}>
-                <UnconnectedPanelSetup {...props} />
-              </ThemeProvider>
-            </HelpInfoProvider>
+            <ExtensionCatalogProvider loaders={[]}>
+              <HelpInfoProvider>
+                <ThemeProvider isDark={theme.palette.mode === "dark"}>
+                  <UnconnectedPanelSetup {...props} />
+                </ThemeProvider>
+              </HelpInfoProvider>
+            </ExtensionCatalogProvider>
           </PanelSettingsEditorContextProvider>
         </MockCurrentLayoutProvider>
-      </HoverValueProvider>
+      </TimelineInteractionStateProvider>
     </UserNodeStateProvider>
   );
 }

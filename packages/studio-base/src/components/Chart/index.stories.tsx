@@ -29,6 +29,7 @@ const dataPoint = {
 const props: ComponentProps<typeof ChartComponent> = {
   width: 500,
   height: 700,
+  isBoundsReset: false,
   data: {
     datasets: [
       {
@@ -156,7 +157,7 @@ export const AllowsClickingOnDatalabels: Story = (_args) => {
   const doClick = useCallback(() => {
     if (clickedDatalabel == undefined) {
       const [canvas] = document.getElementsByTagName("canvas");
-      TestUtils.Simulate.click(canvas!, { clientX: 245, clientY: 429 });
+      TestUtils.Simulate.click(canvas!.parentElement!, { clientX: 245, clientY: 429 });
     }
   }, [clickedDatalabel]);
 

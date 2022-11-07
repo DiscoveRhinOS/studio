@@ -5,6 +5,7 @@
 import { ComponentType, createContext, useContext } from "react";
 
 import { PanelStatics } from "@foxglove/studio-base/components/Panel";
+import { ExtensionNamespace } from "@foxglove/studio-base/types/Extensions";
 import { PanelConfig } from "@foxglove/studio-base/types/panels";
 
 export type PanelComponent = ComponentType<{ childId?: string; tabId?: string }> &
@@ -18,6 +19,12 @@ export type PanelInfo = {
   help?: React.ReactNode;
 
   /**
+   * Tooltip to show on the settings button to help new users find the panel settings. Shown on
+   * panels of this type across the whole app until the settings button is clicked.
+   */
+  settingsOnboardingTooltip?: string;
+
+  /**
    * The panel module is a function to load the panel.
    * This is to support our lazy built-in panels
    */
@@ -25,6 +32,7 @@ export type PanelInfo = {
   config?: PanelConfig;
   relatedConfigs?: { [panelId: string]: PanelConfig };
   preconfigured?: boolean;
+  extensionNamespace?: ExtensionNamespace;
 };
 
 /** PanelCatalog describes the interface for getting available panels */

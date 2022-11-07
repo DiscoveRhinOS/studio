@@ -6,11 +6,12 @@ import { TAB_PANEL_TYPE } from "@foxglove/studio-base/util/globalConstants";
 
 import DataSourceInfoHelp from "./DataSourceInfo/index.help.md";
 import dataSourceInfoThumbnail from "./DataSourceInfo/thumbnail.png";
+import GaugeHelp from "./Gauge/index.help.md";
+import gaugeThumbnail from "./Gauge/thumbnail.png";
 import ImageViewHelp from "./Image/index.help.md";
 import imageViewThumbnail from "./Image/thumbnail.png";
 import IndicatorHelp from "./Indicator/index.help.md";
 import indicatorThumbnail from "./Indicator/thumbnail.png";
-import InternalLogsHelp from "./InternalLogs/index.help.md";
 import LogHelp from "./Log/index.help.md";
 import logThumbnail from "./Log/thumbnail.png";
 import MapHelp from "./Map/index.help.md";
@@ -18,6 +19,7 @@ import mapThumbnail from "./Map/thumbnail.png";
 import NodePlaygroundHelp from "./NodePlayground/index.help.md";
 import nodePlaygroundThumbnail from "./NodePlayground/thumbnail.png";
 import ParametersHelp from "./Parameters/index.help.md";
+import parametersThumbnail from "./Parameters/thumbnail.png";
 import PlaybackPerformanceHelp from "./PlaybackPerformance/index.help.md";
 import PlotHelp from "./Plot/index.help.md";
 import plotThumbnail from "./Plot/thumbnail.png";
@@ -34,6 +36,7 @@ import tableThumbnail from "./Table/thumbnail.png";
 import TeleopHelp from "./Teleop/index.help.md";
 import teleopThumbnail from "./Teleop/thumbnail.png";
 import ThreeDeeRenderHelp from "./ThreeDeeRender/index.help.md";
+import threeDeeRenderThumbnail from "./ThreeDeeRender/thumbnail.png";
 import ThreeDimensionalVizHelp from "./ThreeDimensionalViz/index.help.md";
 import threeDimensionalVizThumbnail from "./ThreeDimensionalViz/thumbnail.png";
 import TopicGraphHelp from "./TopicGraph/index.help.md";
@@ -50,19 +53,12 @@ import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summ
 const builtin: PanelInfo[] = [
   {
     title: "3D",
-    type: "3D Panel",
-    description: "Display visualization markers and models in a 3D scene.",
-    help: ThreeDimensionalVizHelp,
-    thumbnail: threeDimensionalVizThumbnail,
-    module: async () => await import("./ThreeDimensionalViz"),
-  },
-  {
-    title: "3D (Beta)",
     type: "3D",
-    description: "Test our next-generation 3D panel, using a new rendering engine.",
+    description: "Display markers, camera images, meshes, URDFs, and more in a 3D scene.",
     help: ThreeDeeRenderHelp,
-    thumbnail: threeDimensionalVizThumbnail,
+    thumbnail: threeDeeRenderThumbnail,
     module: async () => await import("./ThreeDeeRender"),
+    settingsOnboardingTooltip: "Open settings to configure topics and layers.",
   },
   {
     title: `Diagnostics – Detail (ROS)`,
@@ -97,6 +93,14 @@ const builtin: PanelInfo[] = [
     module: async () => await import("./Indicator"),
   },
   {
+    title: "Gauge",
+    type: "Gauge",
+    description: "Display a colored gauge based on a continuous value.",
+    help: GaugeHelp,
+    thumbnail: gaugeThumbnail,
+    module: async () => await import("./Gauge"),
+  },
+  {
     title: "Teleop",
     type: "Teleop",
     description: "Teleoperate a robot over a live connection.",
@@ -117,6 +121,7 @@ const builtin: PanelInfo[] = [
     type: "Parameters",
     description: "Read and set parameters for a data source.",
     help: ParametersHelp,
+    thumbnail: parametersThumbnail,
     module: async () => await import("./Parameters"),
   },
   {
@@ -200,9 +205,10 @@ const builtin: PanelInfo[] = [
     module: async () => await import("./VariableSlider"),
   },
   {
-    title: "Node Playground",
+    title: "User Scripts",
     type: "NodePlayground",
-    description: "Write custom data transformations in TypeScript.",
+    description:
+      "Write custom data transformations in TypeScript. Previously known as Node Playground.",
     help: NodePlaygroundHelp,
     thumbnail: nodePlaygroundThumbnail,
     module: async () => await import("./NodePlayground"),
@@ -225,13 +231,6 @@ const debug: PanelInfo[] = [
     help: PlaybackPerformanceHelp,
     module: async () => await import("./PlaybackPerformance"),
   },
-  {
-    title: "Studio - Logs",
-    type: "InternalLogs",
-    description: "Specify the channels of internal logs to display for debugging.",
-    help: InternalLogsHelp,
-    module: async () => await import("./InternalLogs"),
-  },
 ];
 
 const legacyPlot: PanelInfo[] = [
@@ -242,4 +241,15 @@ const legacyPlot: PanelInfo[] = [
   },
 ];
 
-export default { builtin, debug, legacyPlot };
+const legacy3D: PanelInfo[] = [
+  {
+    title: "3D (Legacy)",
+    type: "3D Panel",
+    description: "Display visualization markers and models in a 3D scene.",
+    help: ThreeDimensionalVizHelp,
+    thumbnail: threeDimensionalVizThumbnail,
+    module: async () => await import("./ThreeDimensionalViz"),
+  },
+];
+
+export default { builtin, debug, legacyPlot, legacy3D };

@@ -14,7 +14,7 @@
 import { storiesOf } from "@storybook/react";
 
 import Table from "@foxglove/studio-base/panels/Table";
-import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
+import PanelSetup, { Fixture } from "@foxglove/studio-base/stories/PanelSetup";
 
 const makeArrayData = ({
   length = 50,
@@ -36,7 +36,7 @@ const makeArrayData = ({
   });
 };
 
-const fixture = {
+const fixture: Fixture = {
   datatypes: new Map(
     Object.entries({
       my_arr: {
@@ -44,13 +44,14 @@ const fixture = {
       },
     }),
   ),
-  topics: [{ name: "/my_arr", datatype: "my_arr" }],
+  topics: [{ name: "/my_arr", schemaName: "my_arr" }],
   frame: {
     "/my_arr": [
       {
         topic: "/my_arr",
         receiveTime: { sec: 1, nsec: 0 },
         message: { array: makeArrayData() },
+        schemaName: "my_arr",
         sizeInBytes: 0,
       },
     ],
@@ -88,7 +89,7 @@ storiesOf("panels/Table", module)
           onMount={() => {
             setImmediate(() => {
               (
-                document.querySelectorAll("[data-test=expand-row-0]")[0] as HTMLTableCellElement
+                document.querySelectorAll("[data-testid=expand-row-0]")[0] as HTMLTableCellElement
               ).click();
             });
           }}
@@ -109,7 +110,7 @@ storiesOf("panels/Table", module)
             setImmediate(() => {
               (
                 document.querySelectorAll(
-                  "[data-test=expand-cell-obj-0]",
+                  "[data-testid=expand-cell-obj-0]",
                 )[0] as HTMLTableCellElement
               ).click();
             });
@@ -131,7 +132,7 @@ storiesOf("panels/Table", module)
             setImmediate(() => {
               (
                 document.querySelectorAll(
-                  "[data-test=expand-cell-arr-0]",
+                  "[data-testid=expand-cell-arr-0]",
                 )[0] as HTMLTableCellElement
               ).click();
             });
@@ -152,11 +153,11 @@ storiesOf("panels/Table", module)
           onMount={() => {
             setImmediate(() => {
               (
-                document.querySelectorAll("[data-test=expand-row-0]")[0] as HTMLTableCellElement
+                document.querySelectorAll("[data-testid=expand-row-0]")[0] as HTMLTableCellElement
               ).click();
               (
                 document.querySelectorAll(
-                  "[data-test=expand-cell-arr-obj-0]",
+                  "[data-testid=expand-cell-arr-obj-0]",
                 )[0] as HTMLTableCellElement
               ).click();
             });
@@ -177,10 +178,10 @@ storiesOf("panels/Table", module)
           onMount={() => {
             setImmediate(() => {
               (
-                document.querySelectorAll("[data-test=expand-row-0]")[0] as HTMLTableCellElement
+                document.querySelectorAll("[data-testid=expand-row-0]")[0] as HTMLTableCellElement
               ).click();
               (
-                document.querySelectorAll("[data-test=expand-row-1]")[0] as HTMLTableCellElement
+                document.querySelectorAll("[data-testid=expand-row-1]")[0] as HTMLTableCellElement
               ).click();
             });
           }}
@@ -208,12 +209,12 @@ storiesOf("panels/Table", module)
             setImmediate(() => {
               (
                 document.querySelectorAll(
-                  "[data-test=column-header-val]",
+                  "[data-testid=column-header-val]",
                 )[0] as HTMLTableCellElement
               ).click();
               (
                 document.querySelectorAll(
-                  "[data-test=column-header-val]",
+                  "[data-testid=column-header-val]",
                 )[0] as HTMLTableCellElement
               ).click();
             });

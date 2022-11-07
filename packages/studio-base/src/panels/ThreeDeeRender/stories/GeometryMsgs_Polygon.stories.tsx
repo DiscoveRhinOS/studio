@@ -2,12 +2,13 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { MessageEvent, Topic } from "@foxglove/studio";
+import { MessageEvent } from "@foxglove/studio";
+import { Topic } from "@foxglove/studio-base/players/types";
 import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
 
 import ThreeDeeRender from "../index";
 import { PolygonStamped, TransformStamped } from "../ros";
-import { QUAT_IDENTITY } from "./common";
+import { QUAT_IDENTITY, rad2deg } from "./common";
 import useDelayedFixture from "./useDelayedFixture";
 
 export default {
@@ -18,8 +19,8 @@ export default {
 GeometryMsgs_Polygon.parameters = { colorScheme: "dark" };
 export function GeometryMsgs_Polygon(): JSX.Element {
   const topics: Topic[] = [
-    { name: "/polygon", datatype: "geometry_msgs/PolygonStamped" },
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
+    { name: "/polygon", schemaName: "geometry_msgs/PolygonStamped" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
   ];
   const tf1: MessageEvent<TransformStamped> = {
     topic: "/tf",
@@ -32,6 +33,7 @@ export function GeometryMsgs_Polygon(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf2: MessageEvent<TransformStamped> = {
@@ -45,6 +47,7 @@ export function GeometryMsgs_Polygon(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -61,6 +64,7 @@ export function GeometryMsgs_Polygon(): JSX.Element {
         ],
       },
     },
+    schemaName: "geometry_msgs/PolygonStamped",
     sizeInBytes: 0,
   };
 
@@ -85,14 +89,17 @@ export function GeometryMsgs_Polygon(): JSX.Element {
           cameraState: {
             distance: 8.25,
             perspective: true,
-            phi: 1,
+            phi: rad2deg(1),
             targetOffset: [-0.7, 2.1, 0],
-            thetaOffset: -0.25,
-            fovy: 0.75,
+            thetaOffset: rad2deg(-0.25),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
             targetOrientation: [0, 0, 0, 1],
+          },
+          topics: {
+            "/polygon": { visible: true },
           },
         }}
       />

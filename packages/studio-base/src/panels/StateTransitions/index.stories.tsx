@@ -15,8 +15,9 @@ import { useCallback } from "react";
 import TestUtils from "react-dom/test-utils";
 
 import { BlockCache } from "@foxglove/studio-base/players/types";
-import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
+import PanelSetup, { Fixture } from "@foxglove/studio-base/stories/PanelSetup";
 import { useReadySignal } from "@foxglove/studio-base/stories/ReadySignalContext";
+import { expandedLineColors } from "@foxglove/studio-base/util/plotColors";
 
 import StateTransitions from "./index";
 
@@ -46,7 +47,7 @@ const systemStateMessages = [
   { header: { stamp: { sec: 1526191541, nsec: 789110904 } }, state: -1 },
 ];
 
-const fixture = {
+const fixture: Fixture = {
   datatypes: new Map(
     Object.entries({
       "msgs/SystemState": {
@@ -74,8 +75,9 @@ const fixture = {
     }),
   ),
   topics: [
-    { name: "/some/topic/with/state", datatype: "msgs/SystemState" },
-    { name: "/blocks", datatype: "msgs/SystemState" },
+    { name: "/some/topic/with/state", schemaName: "msgs/SystemState" },
+    { name: "/some/topic/with/string_state", schemaName: "msgs/SystemState" },
+    { name: "/blocks", schemaName: "msgs/SystemState" },
   ],
   activeData: {
     startTime: { sec: 1526191527, nsec: 202050 },
@@ -88,8 +90,20 @@ const fixture = {
       topic: "/some/topic/with/state",
       receiveTime: message.header.stamp,
       message: { ...message, data: { value: idx } },
+      schemaName: "msgs/SystemState",
+
       sizeInBytes: 0,
     })),
+    "/some/topic/with/string_state": systemStateMessages.map((message, idx) => {
+      const values = "abcdefghijklmnopqrstuvwxyz".split("");
+      return {
+        topic: "/some/topic/with/string_state",
+        receiveTime: message.header.stamp,
+        message: { ...message, data: { value: values[idx % values.length] } },
+        schemaName: "msgs/SystemState",
+        sizeInBytes: 0,
+      };
+    }),
   },
 };
 
@@ -103,6 +117,16 @@ export default {
   },
 };
 
+export function ColorPalette(): JSX.Element {
+  return (
+    <div style={{ width: "100%", padding: "1rem" }}>
+      {expandedLineColors.map((color) => (
+        <div key={color} style={{ backgroundColor: color, height: "1rem" }} />
+      ))}
+    </div>
+  );
+}
+
 OnePath.parameters = { useReadySignal: true };
 export function OnePath(): JSX.Element {
   const readySignal = useReadySignal({ count: 3 });
@@ -112,6 +136,23 @@ export function OnePath(): JSX.Element {
       <StateTransitions
         overrideConfig={{
           paths: [{ value: "/some/topic/with/state.state", timestampMethod: "receiveTime" }],
+          isSynced: true,
+        }}
+      />
+    </PanelSetup>
+  );
+}
+
+WithSettings.parameters = { useReadySignal: true };
+export function WithSettings(): JSX.Element {
+  const readySignal = useReadySignal({ count: 3 });
+  const pauseFrame = useCallback(() => readySignal, [readySignal]);
+  return (
+    <PanelSetup fixture={fixture} pauseFrame={pauseFrame} includeSettings>
+      <StateTransitions
+        overrideConfig={{
+          paths: [{ value: "/some/topic/with/state.state", timestampMethod: "receiveTime" }],
+          isSynced: true,
         }}
       />
     </PanelSetup>
@@ -130,6 +171,7 @@ export function MultiplePaths(): JSX.Element {
             value: "/some/topic/with/state.state",
             timestampMethod: "receiveTime",
           }),
+          isSynced: true,
         }}
       />
     </PanelSetup>
@@ -146,7 +188,7 @@ export function MultiplePathsWithHover(): JSX.Element {
       pauseFrame={pauseFrame}
       onMount={() => {
         const mouseEnterContainer = document.querySelectorAll(
-          "[data-test~=panel-mouseenter-container",
+          "[data-testid~=panel-mouseenter-container",
         )[0]!;
         TestUtils.Simulate.mouseEnter(mouseEnterContainer);
       }}
@@ -158,6 +200,7 @@ export function MultiplePathsWithHover(): JSX.Element {
             value: "/some/topic/with/state.state",
             timestampMethod: "receiveTime",
           }),
+          isSynced: true,
         }}
       />
     </PanelSetup>
@@ -173,6 +216,7 @@ export function LongPath(): JSX.Element {
       <StateTransitions
         overrideConfig={{
           paths: [{ value: "/some/topic/with/state.state", timestampMethod: "receiveTime" }],
+          isSynced: true,
         }}
       />
     </PanelSetup>
@@ -188,6 +232,25 @@ export function JsonPath(): JSX.Element {
       <StateTransitions
         overrideConfig={{
           paths: [{ value: "/some/topic/with/state.data.value", timestampMethod: "receiveTime" }],
+          isSynced: true,
+        }}
+      />
+    </PanelSetup>
+  );
+}
+
+ColorClash.parameters = { useReadySignal: true };
+export function ColorClash(): JSX.Element {
+  const readySignal = useReadySignal({ count: 3 });
+  const pauseFrame = useCallback(() => readySignal, [readySignal]);
+  return (
+    <PanelSetup fixture={fixture} pauseFrame={pauseFrame}>
+      <StateTransitions
+        overrideConfig={{
+          paths: [
+            { value: "/some/topic/with/string_state.data.value", timestampMethod: "receiveTime" },
+          ],
+          isSynced: true,
         }}
       />
     </PanelSetup>
@@ -203,6 +266,8 @@ const messageCache: BlockCache = {
           topic: "/blocks",
           receiveTime: message.header.stamp,
           message: { ...message, data: { value: idx } },
+          schemaName: "msgs/SystemState",
+
           sizeInBytes: 0,
         })),
       },
@@ -214,6 +279,8 @@ const messageCache: BlockCache = {
           topic: "/blocks",
           receiveTime: message.header.stamp,
           message: { ...message, data: { value: idx } },
+          schemaName: "msgs/SystemState",
+
           sizeInBytes: 0,
         })),
       },
@@ -229,6 +296,7 @@ const messageCache: BlockCache = {
           topic: "/blocks",
           receiveTime: message.header.stamp,
           message: { ...message, data: { value: idx } },
+          schemaName: "msgs/SystemState",
           sizeInBytes: 0,
         })),
       },
@@ -253,6 +321,7 @@ export function Blocks(): JSX.Element {
             { value: "/blocks.state", timestampMethod: "receiveTime" },
             { value: "/blocks.state", timestampMethod: "receiveTime" },
           ],
+          isSynced: true,
         }}
       />
     </PanelSetup>

@@ -11,6 +11,21 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import {
+  PinholeCameraModel,
+  decodeYUV,
+  decodeRGB8,
+  decodeRGBA8,
+  decodeBGRA8,
+  decodeBGR8,
+  decodeFloat1c,
+  decodeBayerRGGB8,
+  decodeBayerBGGR8,
+  decodeBayerGBRG8,
+  decodeBayerGRBG8,
+  decodeMono8,
+  decodeMono16,
+} from "@foxglove/den/image";
 import { Color, Point2D } from "@foxglove/studio-base/types/Messages";
 import sendNotification from "@foxglove/studio-base/util/sendNotification";
 
@@ -29,20 +44,6 @@ import type {
   NormalizedImageMessage,
 } from "../types";
 import { HitmapRenderContext } from "./HitmapRenderContext";
-import PinholeCameraModel from "./PinholeCameraModel";
-import {
-  decodeYUV,
-  decodeRGB8,
-  decodeRGBA8,
-  decodeBGR8,
-  decodeFloat1c,
-  decodeBayerRGGB8,
-  decodeBayerBGGR8,
-  decodeBayerGBRG8,
-  decodeBayerGRBG8,
-  decodeMono8,
-  decodeMono16,
-} from "./decodings";
 import { buildMarkerData, calculateZoomScale } from "./util";
 
 // Just globally keep track of if we've shown an error in rendering, since typically when you get
@@ -142,6 +143,9 @@ function decodeMessageToBitmap(
           break;
         case "rgba8":
           decodeRGBA8(rawData, width, height, image.data);
+          break;
+        case "bgra8":
+          decodeBGRA8(rawData, width, height, image.data);
           break;
         case "bgr8":
         case "8UC3":
@@ -384,8 +388,6 @@ function paintPointsAnnotation(
   cameraModel: PinholeCameraModel | undefined,
   panZoom: PanZoom,
 ) {
-  const thickness = annotation.thickness ?? 1;
-
   switch (annotation.style) {
     case "points": {
       for (let i = 0; i < annotation.points.length; i++) {
@@ -403,11 +405,27 @@ function paintPointsAnnotation(
 
         // For points small enough to be visually indistinct at our current zoom level
         // we do a fast render.
-        const size = thickness * panZoom.scale;
+        const size = annotation.thickness * panZoom.scale;
         if (size <= FAST_POINT_SIZE_THRESHOlD) {
-          paintFastPoint(ctx, point, thickness, thickness, undefined, fillColor, cameraModel);
+          paintFastPoint(
+            ctx,
+            point,
+            annotation.thickness,
+            annotation.thickness,
+            undefined,
+            fillColor,
+            cameraModel,
+          );
         } else {
-          paintCircle(ctx, point, thickness, thickness, undefined, fillColor, cameraModel);
+          paintCircle(
+            ctx,
+            point,
+            annotation.thickness,
+            annotation.thickness,
+            undefined,
+            fillColor,
+            cameraModel,
+          );
         }
       }
       break;
@@ -431,12 +449,7 @@ function paintPointsAnnotation(
           ctx.fill();
         }
       }
-      if (
-        annotation.outlineColor &&
-        annotation.outlineColor.a > 0 &&
-        annotation.thickness != undefined &&
-        annotation.thickness > 0
-      ) {
+      if (annotation.outlineColor && annotation.outlineColor.a > 0 && annotation.thickness > 0) {
         ctx.strokeStyle = toRGBA(annotation.outlineColor);
         ctx.lineWidth = annotation.thickness;
         ctx.stroke();
@@ -444,10 +457,6 @@ function paintPointsAnnotation(
       break;
     }
     case "line_list": {
-      if (annotation.points.length % 2 !== 0) {
-        break;
-      }
-
       const hasExactColors = annotation.outlineColors.length === annotation.points.length / 2;
 
       for (let i = 0; i < annotation.points.length; i += 2) {
@@ -464,7 +473,7 @@ function paintPointsAnnotation(
           ctx,
           annotation.points[i]!,
           annotation.points[i + 1]!,
-          thickness,
+          annotation.thickness,
           outlineColor ?? { r: 0, g: 0, b: 0, a: 1 },
           cameraModel,
         );

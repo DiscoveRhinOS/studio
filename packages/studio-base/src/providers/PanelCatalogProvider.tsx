@@ -6,8 +6,8 @@ import { PropsWithChildren, useMemo } from "react";
 
 import { AppSetting } from "@foxglove/studio-base/AppSetting";
 import Panel from "@foxglove/studio-base/components/Panel";
-import PanelExtensionAdapter from "@foxglove/studio-base/components/PanelExtensionAdapter";
-import { useExtensionRegistry } from "@foxglove/studio-base/context/ExtensionRegistryContext";
+import { PanelExtensionAdapter } from "@foxglove/studio-base/components/PanelExtensionAdapter";
+import { useExtensionCatalog } from "@foxglove/studio-base/context/ExtensionCatalogContext";
 import PanelCatalogContext, {
   PanelCatalog,
   PanelInfo,
@@ -28,13 +28,14 @@ export default function PanelCatalogProvider(
   const [enableLegacyPlotPanel = false] = useAppConfigurationValue<boolean>(
     AppSetting.ENABLE_LEGACY_PLOT_PANEL,
   );
+  const [enableLegacy3DPanel = false] = useAppConfigurationValue<boolean>(
+    AppSetting.ENABLE_LEGACY_3D_PANEL,
+  );
 
-  const extensionRegistry = useExtensionRegistry();
+  const extensionPanels = useExtensionCatalog((state) => state.installedPanels);
 
   const wrappedExtensionPanels = useMemo<PanelInfo[]>(() => {
-    const extensionPanels = extensionRegistry.registeredPanels;
-
-    return Object.values(extensionPanels).map((panel) => {
+    return Object.values(extensionPanels ?? {}).map((panel) => {
       const panelType = `${panel.extensionName}.${panel.registration.name}`;
       const PanelWrapper = (panelProps: PanelProps) => {
         return (
@@ -54,22 +55,36 @@ export default function PanelCatalogProvider(
         title: panel.registration.name,
         type: panelType,
         module: async () => ({ default: Panel(PanelWrapper) }),
+        extensionNamespace: panel.extensionNamespace,
       };
     });
-  }, [extensionRegistry]);
+  }, [extensionPanels]);
 
   const allPanels = useMemo(() => {
-    return [...panels.builtin, ...panels.debug, ...panels.legacyPlot, ...wrappedExtensionPanels];
+    return [
+      ...panels.builtin,
+      ...panels.debug,
+      ...panels.legacyPlot,
+      ...panels.legacy3D,
+      ...wrappedExtensionPanels,
+    ];
   }, [wrappedExtensionPanels]);
 
   const visiblePanels = useMemo(() => {
     const legacyPlotPanels = enableLegacyPlotPanel ? panels.legacyPlot : [];
+    const legacy3DPanels = enableLegacy3DPanel ? panels.legacy3D : [];
 
     // debug panels are hidden by default, users can enable them within app settings
     return showDebugPanels
-      ? [...panels.builtin, ...panels.debug, ...legacyPlotPanels, ...wrappedExtensionPanels]
-      : [...panels.builtin, ...legacyPlotPanels, ...wrappedExtensionPanels];
-  }, [enableLegacyPlotPanel, showDebugPanels, wrappedExtensionPanels]);
+      ? [
+          ...panels.builtin,
+          ...panels.debug,
+          ...legacyPlotPanels,
+          ...legacy3DPanels,
+          ...wrappedExtensionPanels,
+        ]
+      : [...panels.builtin, ...legacyPlotPanels, ...legacy3DPanels, ...wrappedExtensionPanels];
+  }, [enableLegacy3DPanel, enableLegacyPlotPanel, showDebugPanels, wrappedExtensionPanels]);
 
   const panelsByType = useMemo(() => {
     const byType = new Map<string, PanelInfo>();

@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry";
 
+import { LineMaterial } from "../../LineMaterial";
 import type { Renderer } from "../../Renderer";
 import { Marker } from "../../ros";
 import { RenderableMarker } from "./RenderableMarker";
@@ -17,34 +18,49 @@ import {
 } from "./materials";
 
 export class RenderableLineList extends RenderableMarker {
-  geometry: LineSegmentsGeometry;
-  linePrepass: LineSegments2;
-  line: LineSegments2;
+  private geometry: LineSegmentsGeometry;
+  private linePrepass: LineSegments2;
+  private line: LineSegments2;
 
-  constructor(topic: string, marker: Marker, receiveTime: bigint | undefined, renderer: Renderer) {
+  public constructor(
+    topic: string,
+    marker: Marker,
+    receiveTime: bigint | undefined,
+    renderer: Renderer,
+    options: { worldUnits?: boolean } = {},
+  ) {
     super(topic, marker, receiveTime, renderer);
 
     this.geometry = new LineSegmentsGeometry();
 
-    // Stencil and depth pass 1
-    const matLinePrepass = makeLinePrepassMaterial(marker);
+    const { worldUnits = true } = options;
+    const lineOptions = { resolution: this.renderer.input.canvasSize, worldUnits };
+
+    // We alleviate corner artifacts using a two-pass render for lines. The
+    // first pass writes to depth only, followed by a color pass with stencil
+    // operations. The source for this technique is:
+    // <https://github.com/mrdoob/three.js/issues/23680#issuecomment-1063294691>
+    // <https://gkjohnson.github.io/threejs-sandbox/fat-line-opacity/webgl_lines_fat.html>
+
+    // Depth pass 1
+    const matLinePrepass = makeLinePrepassMaterial(marker, lineOptions);
     this.linePrepass = new LineSegments2(this.geometry, matLinePrepass);
     this.linePrepass.renderOrder = 1;
     this.linePrepass.userData.picking = false;
     this.add(this.linePrepass);
 
     // Color pass 2
-    const matLine = makeLineMaterial(marker);
+    const matLine = makeLineMaterial(marker, lineOptions);
     this.line = new LineSegments2(this.geometry, matLine);
     this.line.renderOrder = 2;
     const pickingLineWidth = marker.scale.x * 1.2;
-    this.line.userData.pickingMaterial = makeLinePickingMaterial(pickingLineWidth, true);
+    this.line.userData.pickingMaterial = makeLinePickingMaterial(pickingLineWidth, lineOptions);
     this.add(this.line);
 
     this.update(marker, receiveTime);
   }
 
-  override dispose(): void {
+  public override dispose(): void {
     this.linePrepass.material.dispose();
     this.line.material.dispose();
 
@@ -54,14 +70,15 @@ export class RenderableLineList extends RenderableMarker {
     this.geometry.dispose();
   }
 
-  override update(marker: Marker, receiveTime: bigint | undefined): void {
+  public override update(newMarker: Marker, receiveTime: bigint | undefined): void {
+    const prevMarker = this.userData.marker;
+    super.update(newMarker, receiveTime);
+    const marker = this.userData.marker;
+
     let pointsLength = marker.points.length;
     if (pointsLength % 2 !== 0) {
       pointsLength--;
     }
-
-    const prevMarker = this.userData.marker;
-    super.update(marker, receiveTime);
 
     const lineWidth = marker.scale.x;
     const transparent = markerHasTransparency(marker);
@@ -75,8 +92,18 @@ export class RenderableLineList extends RenderableMarker {
       this.line.material.needsUpdate = true;
     }
 
-    this.linePrepass.material.linewidth = lineWidth;
-    this.line.material.linewidth = lineWidth;
+    const matLinePrepass = this.linePrepass.material as LineMaterial;
+    matLinePrepass.lineWidth = lineWidth;
+    const matLine = this.line.material as LineMaterial;
+    matLine.lineWidth = lineWidth;
+
+    const prevPointsLength = (this.geometry.attributes.instanceStart?.count ?? 0) * 2;
+    if (pointsLength !== prevPointsLength) {
+      this.geometry.dispose();
+      this.geometry = new LineSegmentsGeometry();
+      this.linePrepass.geometry = this.geometry;
+      this.line.geometry = this.geometry;
+    }
 
     this._setPositions(marker, pointsLength);
     this._setColors(marker, pointsLength);
@@ -90,9 +117,10 @@ export class RenderableLineList extends RenderableMarker {
     const linePositions = new Float32Array(3 * pointsLength);
     for (let i = 0; i < pointsLength; i++) {
       const point = marker.points[i]!;
-      linePositions[i * 3 + 0] = point.x;
-      linePositions[i * 3 + 1] = point.y;
-      linePositions[i * 3 + 2] = point.z;
+      const offset = i * 3;
+      linePositions[offset + 0] = point.x;
+      linePositions[offset + 1] = point.y;
+      linePositions[offset + 2] = point.z;
     }
 
     this.geometry.setPositions(linePositions);
@@ -102,10 +130,11 @@ export class RenderableLineList extends RenderableMarker {
     // Converts color-per-point to a flattened typed array
     const rgbaData = new Float32Array(4 * pointsLength);
     this._markerColorsToLinear(marker, pointsLength, (color, i) => {
-      rgbaData[4 * i + 0] = color[0];
-      rgbaData[4 * i + 1] = color[1];
-      rgbaData[4 * i + 2] = color[2];
-      rgbaData[4 * i + 3] = color[3];
+      const offset = i * 4;
+      rgbaData[offset + 0] = color[0];
+      rgbaData[offset + 1] = color[1];
+      rgbaData[offset + 2] = color[2];
+      rgbaData[offset + 3] = color[3];
     });
 
     // [rgba, rgba]

@@ -11,10 +11,10 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import { CameraInfo, PinholeCameraModel } from "@foxglove/den/image";
 import { Topic } from "@foxglove/studio-base/players/types";
 
 import { Dimensions, MarkerData, RawMarkerData, ZoomMode } from "../types";
-import PinholeCameraModel from "./PinholeCameraModel";
 
 export function calculateZoomScale(
   bitmap: Dimensions,
@@ -74,11 +74,11 @@ export function getMarkerOptions(
 ): string[] {
   const results = [];
   const cameraNamespace = getCameraNamespace(imageTopic);
-  for (const { name, datatype } of topics) {
+  for (const { name, schemaName } of topics) {
     if (
       cameraNamespace &&
       name.startsWith(cameraNamespace + "/") &&
-      imageMarkerDatatypes.includes(datatype)
+      imageMarkerDatatypes.includes(schemaName)
     ) {
       results.push(name);
     }
@@ -134,7 +134,7 @@ export function buildMarkerData(rawMarkerData: RawMarkerData): MarkerData | unde
     if (!cameraInfo) {
       return undefined;
     }
-    cameraModel = new PinholeCameraModel(cameraInfo);
+    cameraModel = new PinholeCameraModel(cameraInfo as CameraInfo);
   }
 
   return {

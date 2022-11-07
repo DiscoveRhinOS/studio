@@ -2,12 +2,19 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { MessageEvent, Topic } from "@foxglove/studio";
+import { MessageEvent } from "@foxglove/studio";
+import { Topic } from "@foxglove/studio-base/players/types";
 import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
 
 import ThreeDeeRender from "../index";
 import { CameraInfo, TransformStamped } from "../ros";
-import { BASE_LINK_FRAME_ID, FIXED_FRAME_ID, QUAT_IDENTITY, SENSOR_FRAME_ID } from "./common";
+import {
+  BASE_LINK_FRAME_ID,
+  FIXED_FRAME_ID,
+  QUAT_IDENTITY,
+  rad2deg,
+  SENSOR_FRAME_ID,
+} from "./common";
 import useDelayedFixture from "./useDelayedFixture";
 
 export default {
@@ -18,10 +25,10 @@ export default {
 CameraInfoRender.parameters = { colorScheme: "dark" };
 export function CameraInfoRender(): JSX.Element {
   const topics: Topic[] = [
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
-    { name: "/rational_polynomial", datatype: "sensor_msgs/CameraInfo" },
-    { name: "/none", datatype: "sensor_msgs/CameraInfo" },
-    { name: "/empty", datatype: "sensor_msgs/CameraInfo" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
+    { name: "/rational_polynomial", schemaName: "sensor_msgs/CameraInfo" },
+    { name: "/none", schemaName: "sensor_msgs/CameraInfo" },
+    { name: "/empty", schemaName: "sensor_msgs/CameraInfo" },
   ];
 
   const tf1: MessageEvent<TransformStamped> = {
@@ -35,6 +42,7 @@ export function CameraInfoRender(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf2: MessageEvent<TransformStamped> = {
@@ -48,6 +56,7 @@ export function CameraInfoRender(): JSX.Element {
         rotation: { x: 0.383, y: 0, z: 0, w: 0.924 },
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -70,6 +79,7 @@ export function CameraInfoRender(): JSX.Element {
         233.90321350097656, -0.00011014656047336757, 0, 0, 1, 0.000024338871298823506,
       ],
     },
+    schemaName: "sensor_msgs/CameraInfo",
     sizeInBytes: 0,
   };
 
@@ -91,6 +101,7 @@ export function CameraInfoRender(): JSX.Element {
         0, 1, 0,
       ],
     },
+    schemaName: "sensor_msgs/CameraInfo",
     sizeInBytes: 0,
   };
 
@@ -102,6 +113,7 @@ export function CameraInfoRender(): JSX.Element {
       height: 1080,
       width: 1920,
     },
+    schemaName: "sensor_msgs/CameraInfo",
     sizeInBytes: 0,
   };
 
@@ -126,12 +138,12 @@ export function CameraInfoRender(): JSX.Element {
           ...ThreeDeeRender.defaultConfig,
           followTf: SENSOR_FRAME_ID,
           cameraState: {
-            distance: 1.25,
+            distance: 1.85,
             perspective: true,
-            phi: 0,
+            phi: rad2deg(0),
             targetOffset: [0, 0, 0],
-            thetaOffset: 0,
-            fovy: 0.75,
+            thetaOffset: rad2deg(Math.PI),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
@@ -139,14 +151,17 @@ export function CameraInfoRender(): JSX.Element {
           },
           topics: {
             "/rational_polynomial": {
+              visible: true,
               color: "rgba(0, 255, 0, 1)",
               distance: 0.25,
             },
             "/none": {
+              visible: true,
               color: "rgba(0, 255, 255, 1)",
               distance: 0.5,
             },
             "/empty": {
+              visible: true,
               color: "rgba(255, 0, 0, 1)",
               distance: 0.75,
             },

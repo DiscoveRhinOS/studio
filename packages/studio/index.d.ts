@@ -16,6 +16,17 @@ declare module "@foxglove/studio" {
 
   export type ParameterStruct = Record<string, ParameterValue>;
 
+  // Valid types for global variables
+  export type VariableValue =
+    | undefined
+    | boolean
+    | number
+    | string
+    | VariableValue[]
+    | VariableStruct;
+
+  export type VariableStruct = Record<string, VariableValue>;
+
   // Valid types for application settings
   export type AppSettingValue = string | number | boolean | undefined;
 
@@ -33,13 +44,17 @@ declare module "@foxglove/studio" {
      */
     name: string;
     /**
-     * The datatype is an identifier for the types of messages on this topic. Typically this is the
-     * fully-qualified name of the message type. The fully-qualified name depends on the data source
-     * and data loaded by the data source.
-     *
-     * i.e. package.Message in protobuf-like serialization or pkg/Msg in ROS systems.
+     * @deprecated Renamed to `schemaName`. `datatype` will be removed in a future release.
      */
     datatype: string;
+    /**
+     * The schema name is an identifier for the types of messages on this topic. Typically this is the
+     * fully-qualified name of the message schema. The fully-qualified name depends on the data source
+     * and data loaded by the data source.
+     *
+     * i.e. `package.Message` in protobuf-like serialization or `pkg/Msg` in ROS systems.
+     */
+    schemaName: string;
   };
 
   export type Subscription = {
@@ -60,6 +75,10 @@ declare module "@foxglove/studio" {
   export type MessageEvent<T> = Readonly<{
     /** The topic name this message was received on, i.e. "/some/topic" */
     topic: string;
+    /**
+     * The schema name is an identifier for the schema of the message within the message event.
+     */
+    schemaName: string;
     /**
      * The time in nanoseconds this message was received. This may be set by the
      * local system clock or the data source, depending on the data source used
@@ -136,9 +155,18 @@ declare module "@foxglove/studio" {
     allFrames?: readonly MessageEvent<unknown>[];
 
     /**
-     * Map of current parameter values.
+     * Map of current parameter values. Parameters are key/value pairs associated with the data
+     * source, and may not be available for all data sources. For example, ROS 1 live connections
+     * support parameters through the Parameter Server <http://wiki.ros.org/Parameter%20Server>.
      */
     parameters?: ReadonlyMap<string, ParameterValue>;
+
+    /**
+     * Map of current Studio variables. Variables are key/value pairs that are globally accessible
+     * to panels and scripts in the current layout. See
+     * <https://foxglove.dev/docs/studio/app-concepts/variables> for more information.
+     */
+    variables?: ReadonlyMap<string, VariableValue>;
 
     /**
      * List of available topics. This list includes subscribed and unsubscribed topics.
@@ -212,6 +240,14 @@ declare module "@foxglove/studio" {
     setParameter: (name: string, value: ParameterValue) => void;
 
     /**
+     * Set the value of variable name to value.
+     *
+     * @param name The name of the variable to set.
+     * @param value The new value of the variable.
+     */
+    setVariable: (name: string, value: VariableValue) => void;
+
+    /**
      * Set the active preview time. Setting the preview time to undefined clears the preview time.
      */
     setPreviewTime: (time: number | undefined) => void;
@@ -249,11 +285,13 @@ declare module "@foxglove/studio" {
     subscribeAppSettings(settings: string[]): void;
 
     /**
-     * Indicate intent to advertise on a specific topic and datatype.
+     * Indicate intent to publish messages on a specific topic.
      *
-     * The options object is passed to the current data source for additional configuration.
+     * @param topic The topic on which the extension will publish messages.
+     * @param schemaName The name of the schema that the published messages will conform to.
+     * @param options Options passed to the current data source for additional configuration.
      */
-    advertise?(topic: string, datatype: string, options?: Record<string, unknown>): void;
+    advertise?(topic: string, schemaName: string, options?: Record<string, unknown>): void;
 
     /**
      * Indicate that you no longer want to advertise on this topic.
@@ -347,6 +385,7 @@ declare module "@foxglove/studio" {
     | "Note"
     | "NoteFilled"
     | "Points"
+    | "PrecisionManufacturing"
     | "Radar"
     | "Settings"
     | "Shapes"
@@ -365,8 +404,34 @@ declare module "@foxglove/studio" {
   export type SettingsTreeFieldValue =
     | { input: "autocomplete"; value?: string; items: string[] }
     | { input: "boolean"; value?: boolean }
-    | { input: "rgb"; value?: string }
-    | { input: "rgba"; value?: string }
+    | {
+        input: "rgb";
+        value?: string;
+
+        /**
+         * Optional placeholder text displayed in the field input when value is undefined
+         */
+        placeholder?: string;
+
+        /**
+         * Optional field that's true if the clear button should be hidden.
+         */
+        hideClearButton?: boolean;
+      }
+    | {
+        input: "rgba";
+        value?: string;
+
+        /**
+         * Optional placeholder text displayed in the field input when value is undefined
+         */
+        placeholder?: string;
+
+        /**
+         * Optional field that's true if the clear button should be hidden.
+         */
+        hideClearButton?: boolean;
+      }
     | { input: "gradient"; value?: [string, string] }
     | { input: "messagepath"; value?: string; validTypes?: string[] }
     | {
@@ -376,6 +441,11 @@ declare module "@foxglove/studio" {
         max?: number;
         min?: number;
         precision?: number;
+
+        /**
+         * Optional placeholder text displayed in the field input when value is undefined
+         */
+        placeholder?: string;
       }
     | {
         input: "select";
@@ -387,11 +457,24 @@ declare module "@foxglove/studio" {
         value?: string | string[];
         options: Array<{ label: string; value: undefined | string }>;
       }
-    | { input: "string"; value?: string }
-    | { input: "toggle"; value?: string; options: string[] }
+    | {
+        input: "string";
+        value?: string;
+
+        /**
+         * Optional placeholder text displayed in the field input when value is undefined
+         */
+        placeholder?: string;
+      }
+    | {
+        input: "toggle";
+        value?: string;
+        options: string[] | Array<{ label: string; value: undefined | string }>;
+      }
     | {
         input: "vec3";
         value?: [undefined | number, undefined | number, undefined | number];
+        placeholder?: [undefined | string, undefined | string, undefined | string];
         step?: number;
         precision?: number;
         labels?: [string, string, string];
@@ -401,6 +484,7 @@ declare module "@foxglove/studio" {
     | {
         input: "vec2";
         value?: [undefined | number, undefined | number];
+        placeholder?: [undefined | string, undefined | string];
         step?: number;
         precision?: number;
         labels?: [string, string];
@@ -423,12 +507,6 @@ declare module "@foxglove/studio" {
      * The label displayed alongside the field.
      */
     label: string;
-
-    /**
-     * Optional placeholder text displayed in the field input in the
-     * absence of a value.
-     */
-    placeholder?: string;
 
     /**
      * True if the field is readonly.
@@ -529,6 +607,11 @@ declare module "@foxglove/studio" {
      * to the action handler.
      **/
     visible?: boolean;
+
+    /**
+     * Filter Children by visibility status
+     */
+    enableVisibilityFilter?: boolean;
   };
 
   /**

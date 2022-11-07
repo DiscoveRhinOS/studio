@@ -25,7 +25,6 @@ import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { usePanelSettingsTreeUpdate } from "@foxglove/studio-base/providers/PanelSettingsEditorContextProvider";
 import { SaveConfig } from "@foxglove/studio-base/types/panels";
-import { DIAGNOSTIC_TOPIC } from "@foxglove/studio-base/util/globalConstants";
 
 import DiagnosticStatus from "./DiagnosticStatus";
 import helpContent from "./DiagnosticStatusPanel.help.md";
@@ -57,14 +56,20 @@ function DiagnosticStatusPanel(props: Props) {
   // Filter down all topics to those that conform to our supported datatypes
   const availableTopics = useMemo(() => {
     const filtered = topics
-      .filter((topic) => ALLOWED_DATATYPES.includes(topic.datatype))
+      .filter((topic) => ALLOWED_DATATYPES.includes(topic.schemaName))
       .map((topic) => topic.name);
 
     // Keeps only the first occurrence of each topic.
-    return uniq([DIAGNOSTIC_TOPIC, ...filtered, topicToRender]);
-  }, [topics, topicToRender]);
+    return uniq([...filtered]);
+  }, [topics]);
 
-  const availableDiagnostics = useAvailableDiagnostics(topicToRender);
+  // If the topicToRender is not in the availableTopics, then we should not try to use it
+  const diagnosticTopic = useMemo(() => {
+    return availableTopics.includes(topicToRender) ? topicToRender : undefined;
+  }, [availableTopics, topicToRender]);
+
+  const diagnostics = useDiagnostics(diagnosticTopic);
+  const availableDiagnostics = useAvailableDiagnostics(diagnosticTopic);
 
   // generate Autocomplete entries from the available diagnostics
   const autocompleteOptions = useMemo(() => {
@@ -99,8 +104,6 @@ function DiagnosticStatusPanel(props: Props) {
       }) ?? ReactNull
     );
   }, [autocompleteOptions, selectedDisplayName]);
-
-  const diagnostics = useDiagnostics(topicToRender);
 
   const filteredDiagnostics = useMemo(() => {
     const diagnosticsByName = diagnostics.get(selectedHardwareId ?? "");
@@ -203,7 +206,7 @@ function DiagnosticStatusPanel(props: Props) {
   );
 }
 
-const defaultConfig: Config = { topicToRender: DIAGNOSTIC_TOPIC };
+const defaultConfig: Config = { topicToRender: "/diagnostics" };
 
 export default Panel(
   Object.assign(DiagnosticStatusPanel, {

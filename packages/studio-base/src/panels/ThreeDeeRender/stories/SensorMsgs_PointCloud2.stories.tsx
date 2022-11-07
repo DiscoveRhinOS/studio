@@ -4,12 +4,13 @@
 
 import { vec3 } from "gl-matrix";
 
-import { MessageEvent, Topic } from "@foxglove/studio";
+import { MessageEvent } from "@foxglove/studio";
+import { Topic } from "@foxglove/studio-base/players/types";
 import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
 
 import ThreeDeeRender from "../index";
 import { PointCloud2, TransformStamped } from "../ros";
-import { QUAT_IDENTITY } from "./common";
+import { QUAT_IDENTITY, rad2deg } from "./common";
 import useDelayedFixture from "./useDelayedFixture";
 
 export default {
@@ -38,8 +39,8 @@ SensorMsgs_PointCloud2_RGB.parameters = { colorScheme: "dark" };
 
 function SensorMsgs_PointCloud2({ rgbaFieldName }: { rgbaFieldName: string }): JSX.Element {
   const topics: Topic[] = [
-    { name: "/pointcloud", datatype: "sensor_msgs/PointCloud2" },
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
+    { name: "/pointcloud", schemaName: "sensor_msgs/PointCloud2" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
   ];
   const tf1: MessageEvent<TransformStamped> = {
     topic: "/tf",
@@ -52,6 +53,7 @@ function SensorMsgs_PointCloud2({ rgbaFieldName }: { rgbaFieldName: string }): J
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf2: MessageEvent<TransformStamped> = {
@@ -65,6 +67,7 @@ function SensorMsgs_PointCloud2({ rgbaFieldName }: { rgbaFieldName: string }): J
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -113,6 +116,7 @@ function SensorMsgs_PointCloud2({ rgbaFieldName }: { rgbaFieldName: string }): J
       data,
       is_dense: true,
     },
+    schemaName: "sensor_msgs/PointCloud2",
     sizeInBytes: 0,
   };
 
@@ -135,6 +139,7 @@ function SensorMsgs_PointCloud2({ rgbaFieldName }: { rgbaFieldName: string }): J
           followTf: "base_link",
           topics: {
             "/pointcloud": {
+              visible: true,
               pointSize: 10,
               colorMode: rgbaFieldName,
               colorField: rgbaFieldName,
@@ -147,10 +152,10 @@ function SensorMsgs_PointCloud2({ rgbaFieldName }: { rgbaFieldName: string }): J
           cameraState: {
             distance: 13.5,
             perspective: true,
-            phi: 1.22,
+            phi: rad2deg(1.22),
             targetOffset: [0.25, -0.5, 0],
-            thetaOffset: -0.33,
-            fovy: 0.75,
+            thetaOffset: rad2deg(-0.33),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
@@ -165,8 +170,8 @@ function SensorMsgs_PointCloud2({ rgbaFieldName }: { rgbaFieldName: string }): J
 SensorMsgs_PointCloud2_Intensity.parameters = { colorScheme: "dark" };
 export function SensorMsgs_PointCloud2_Intensity(): JSX.Element {
   const topics: Topic[] = [
-    { name: "/pointcloud", datatype: "sensor_msgs/PointCloud2" },
-    { name: "/tf", datatype: "geometry_msgs/TransformStamped" },
+    { name: "/pointcloud", schemaName: "sensor_msgs/PointCloud2" },
+    { name: "/tf", schemaName: "geometry_msgs/TransformStamped" },
   ];
   const tf1: MessageEvent<TransformStamped> = {
     topic: "/tf",
@@ -179,6 +184,7 @@ export function SensorMsgs_PointCloud2_Intensity(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
   const tf2: MessageEvent<TransformStamped> = {
@@ -192,6 +198,7 @@ export function SensorMsgs_PointCloud2_Intensity(): JSX.Element {
         rotation: QUAT_IDENTITY,
       },
     },
+    schemaName: "geometry_msgs/TransformStamped",
     sizeInBytes: 0,
   };
 
@@ -286,6 +293,7 @@ export function SensorMsgs_PointCloud2_Intensity(): JSX.Element {
       data,
       is_dense: false,
     },
+    schemaName: "sensor_msgs/PointCloud2",
     sizeInBytes: 0,
   };
 
@@ -308,6 +316,7 @@ export function SensorMsgs_PointCloud2_Intensity(): JSX.Element {
           followTf: "base_link",
           topics: {
             "/pointcloud": {
+              visible: true,
               pointSize: 5,
             },
           },
@@ -317,10 +326,10 @@ export function SensorMsgs_PointCloud2_Intensity(): JSX.Element {
           cameraState: {
             distance: 13.5,
             perspective: true,
-            phi: 1.22,
+            phi: rad2deg(1.22),
             targetOffset: [0.25, -0.5, 3],
-            thetaOffset: -0.33,
-            fovy: 0.75,
+            thetaOffset: rad2deg(-0.33),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
@@ -335,7 +344,7 @@ export function SensorMsgs_PointCloud2_Intensity(): JSX.Element {
 // Render a flat plane if we only have two dimensions
 SensorMsgs_PointCloud2_TwoDimensions.parameters = { colorScheme: "dark" };
 export function SensorMsgs_PointCloud2_TwoDimensions(): JSX.Element {
-  const topics: Topic[] = [{ name: "/pointcloud", datatype: "sensor_msgs/PointCloud2" }];
+  const topics: Topic[] = [{ name: "/pointcloud", schemaName: "sensor_msgs/PointCloud2" }];
 
   const SCALE = 10 / 128;
 
@@ -371,6 +380,7 @@ export function SensorMsgs_PointCloud2_TwoDimensions(): JSX.Element {
       data,
       is_dense: true,
     },
+    schemaName: "sensor_msgs/PointCloud2",
     sizeInBytes: 0,
   };
 
@@ -396,14 +406,17 @@ export function SensorMsgs_PointCloud2_TwoDimensions(): JSX.Element {
           cameraState: {
             distance: 13.5,
             perspective: true,
-            phi: 1.22,
+            phi: rad2deg(1.22),
             targetOffset: [0.25, -0.5, 0],
-            thetaOffset: -0.33,
-            fovy: 0.75,
+            thetaOffset: rad2deg(-0.33),
+            fovy: rad2deg(0.75),
             near: 0.01,
             far: 5000,
             target: [0, 0, 0],
             targetOrientation: [0, 0, 0, 1],
+          },
+          topics: {
+            "/pointcloud": { visible: true },
           },
         }}
       />

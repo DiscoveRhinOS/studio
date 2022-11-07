@@ -13,30 +13,12 @@
 
 import { Stack } from "@mui/material";
 import { storiesOf } from "@storybook/react";
-import styled from "styled-components";
 
 import MockPanelContextProvider from "@foxglove/studio-base/components/MockPanelContextProvider";
-import useGlobalVariables from "@foxglove/studio-base/hooks/useGlobalVariables";
-import { decodeMarker } from "@foxglove/studio-base/panels/ThreeDimensionalViz/commands/PointClouds/decodeMarker";
-import {
-  POINT_CLOUD_MESSAGE,
-  POINT_CLOUD_WITH_ADDITIONAL_FIELDS,
-} from "@foxglove/studio-base/panels/ThreeDimensionalViz/commands/PointClouds/fixture/pointCloudData";
-import PanelSetup, { triggerInputChange } from "@foxglove/studio-base/stories/PanelSetup";
+import PanelSetup from "@foxglove/studio-base/stories/PanelSetup";
+import { PointCloud2 } from "@foxglove/studio-base/types/Messages";
 
 import Interactions, { OBJECT_TAB_TYPE, LINKED_VARIABLES_TAB_TYPE } from "./Interactions";
-import useLinkedGlobalVariables from "./useLinkedGlobalVariables";
-
-const SWrapper = styled.div`
-  background: ${({ theme }) => theme.palette.neutralLighterAlt};
-  display: flex;
-  flex-wrap: wrap;
-  height: 100%;
-`;
-
-const SP = styled.p`
-  color: ${({ theme }) => theme.semanticColors.disabledText};
-`;
 
 const markerObject = {
   id: "12345",
@@ -71,6 +53,208 @@ const markerObject = {
   },
 };
 
+// ts-prune-ignore-next
+export const POINT_CLOUD_MESSAGE: PointCloud2 = {
+  fields: [
+    {
+      name: "x",
+      offset: 0,
+      datatype: 7,
+      count: 1,
+    },
+    {
+      name: "y",
+      offset: 4,
+      datatype: 7,
+      count: 1,
+    },
+    {
+      name: "z",
+      offset: 8,
+      datatype: 7,
+      count: 1,
+    },
+    {
+      name: "rgb",
+      offset: 16,
+      datatype: 7,
+      count: 1,
+    },
+  ],
+  type: 102,
+  pose: {
+    position: { x: 0, y: 0, z: 0 },
+    orientation: { x: 0, y: 0, z: 0, w: 0 },
+  },
+  header: {
+    seq: 0,
+    frame_id: "root_frame_id",
+    stamp: {
+      sec: 10,
+      nsec: 10,
+    },
+  },
+  height: 1,
+  is_bigendian: false,
+  is_dense: 1,
+  point_step: 32,
+  row_step: 32,
+  width: 2,
+  data: new Uint8Array([
+    // point 1
+    // x
+    125, 236, 11, 197,
+    // y
+    118, 102, 48, 196,
+    // z
+    50, 194, 23, 192,
+    // ?
+    0, 0, 128, 63,
+    // rgb (abgr ordering)
+    10, 255, 230, 127,
+    // ?
+    254, 127, 0, 0, 16, 142, 140, 0, 161, 254, 127, 0,
+    // point 2
+    // x
+    125, 236, 11, 197,
+    // y
+    118, 102, 48, 196,
+    // z
+    50, 194, 23, 192,
+    // ?
+    0, 0, 128, 63,
+    // rgb (abgr ordering)
+    10, 255, 255, 127,
+    // ?
+    254, 127, 0, 0, 16, 142, 140, 0, 161, 254, 127, 0,
+    // point 3
+    // x
+    118, 102, 48, 196,
+    // y
+    125, 236, 11, 197,
+    // z
+    50, 194, 23, 192,
+    // ?
+    0, 0, 128, 63,
+    // rgb (abgr ordering)
+    10, 127, 255, 127,
+    // ?
+    254, 127, 0, 0, 16, 142, 140, 0, 161, 254, 127, 8,
+  ]),
+};
+
+// ts-prune-ignore-next
+export const POINT_CLOUD_WITH_ADDITIONAL_FIELDS: PointCloud2 = {
+  fields: [
+    {
+      name: "x",
+      offset: 0,
+      datatype: 7,
+      count: 1,
+    },
+    {
+      name: "y",
+      offset: 4,
+      datatype: 7,
+      count: 1,
+    },
+    {
+      name: "z",
+      offset: 8,
+      datatype: 7,
+      count: 1,
+    },
+    {
+      name: "foo",
+      offset: 12,
+      datatype: 2,
+      count: 1,
+    },
+    {
+      name: "bar",
+      offset: 13,
+      datatype: 4,
+      count: 1,
+    },
+    {
+      name: "baz",
+      offset: 15,
+      datatype: 5,
+      count: 1,
+    },
+    {
+      name: "foo16_some_really_really_long_name",
+      offset: 19,
+      datatype: 3,
+      count: 1,
+    },
+  ],
+  type: 102,
+  pose: {
+    position: { x: 0, y: 0, z: 0 },
+    orientation: { x: 0, y: 0, z: 0, w: 0 },
+  },
+  header: {
+    seq: 0,
+    frame_id: "root_frame_id",
+    stamp: {
+      sec: 10,
+      nsec: 10,
+    },
+  },
+  height: 1,
+  is_bigendian: false,
+  is_dense: 1,
+  point_step: 21,
+  row_step: 21,
+  width: 2,
+  data: new Uint8Array([
+    0, //   1, start of point 1
+    0, //   2
+    0, //   3
+    0, //   4, x: float32 = 0
+    0, //   5
+    0, //   6
+    128, // 7
+    63, //  8, y: float32 = 1
+    0, //   9
+    0, //   10
+    0, //   11
+    64, //  12, z: float32 =  2
+    7, //   13, foo: uint8 = 7
+    6, //   14
+    0, //   15, bar: uint16 = 6
+    5, //   16
+    0, //   17
+    0, //   18
+    0, //   19, baz: int32 = 5
+    9, //   20
+    1, //   21, foo16: int16 = 265
+    // ---------- another row
+    0, //   22, start of point 2
+    0, //   23
+    0, //   24
+    0, //   25 x: float32 = 0
+    0, //   26
+    0, //   27
+    128, // 28
+    63, //  29 y: float32 = 1
+    0, //   30
+    0, //   31
+    0, //   32
+    64, //  33, z: float32 =  2
+    9, //   34, foo: uint8 = 9
+    8, //   35
+    0, //   36, bar: uint16 = 8
+    7, //   37
+    0, //   38
+    0, //   39
+    0, //   40, baz: int32 = 7
+    2, //   41
+    0, //   42, foo16: int16 = 2
+  ]),
+};
+
 const interactiveMarkerObject = {
   ...markerObject,
   interactionData: { topic: "/foo/bar", originalMessage: markerObject },
@@ -85,36 +269,13 @@ const sharedProps = {
   },
 };
 
-function GlobalVariablesDisplay() {
-  const { globalVariables } = useGlobalVariables();
-  return (
-    <SP>
-      <strong>Global variables: </strong>
-      {JSON.stringify(globalVariables)}
-    </SP>
-  );
-}
-function LinkedGlobalVariablesDisplay() {
-  const { linkedGlobalVariables } = useLinkedGlobalVariables();
-  return (
-    <SP>
-      <strong>Global variable links: </strong>
-      {JSON.stringify(linkedGlobalVariables)}
-    </SP>
-  );
-}
-
 function PanelSetupWithData({
   children,
-  showGlobalVariables = false,
-  showLinkedGlobalVariables = false,
   title,
   onMount,
   disableAutoOpenClickedObject = true,
 }: {
   children: React.ReactNode;
-  showGlobalVariables?: boolean;
-  showLinkedGlobalVariables?: boolean;
   title: React.ReactNode;
   onMount?: (el: HTMLDivElement) => void;
   disableAutoOpenClickedObject?: boolean;
@@ -177,10 +338,6 @@ function PanelSetupWithData({
         >
           <p>{title}</p>
           <Stack direction="row" flex="auto">
-            <Stack flex={1}>
-              {showGlobalVariables && <GlobalVariablesDisplay />}
-              {showLinkedGlobalVariables && <LinkedGlobalVariablesDisplay />}
-            </Stack>
             {children}
           </Stack>
         </div>
@@ -191,7 +348,7 @@ function PanelSetupWithData({
 
 function DefaultStory() {
   return (
-    <SWrapper>
+    <Stack direction="row" flexWrap="wrap" height="100%" bgcolor="background.paper">
       <PanelSetupWithData title="Link Tab">
         <Interactions
           {...(sharedProps as any)}
@@ -212,7 +369,7 @@ function DefaultStory() {
       <PanelSetupWithData
         title="Clicked link button"
         onMount={(el) => {
-          const btn = el.querySelector("[data-test='link-id']");
+          const btn = el.querySelector("[data-testid='link-id']");
           if (btn) {
             (btn as any).click();
           }
@@ -226,7 +383,7 @@ function DefaultStory() {
       <PanelSetupWithData
         title="Add link to existing linked global variable"
         onMount={(el) => {
-          const btn = el.querySelector("[data-test='link-scale']");
+          const btn = el.querySelector("[data-testid='link-scale']");
           if (btn) {
             (btn as any).click();
           }
@@ -237,7 +394,7 @@ function DefaultStory() {
           selectedObject={{ ...selectedObject, interactionData: { topic: "/foo/bar" } }}
         />
       </PanelSetupWithData>
-    </SWrapper>
+    </Stack>
   );
 }
 
@@ -248,14 +405,14 @@ storiesOf("panels/ThreeDeeRender/Interactions/Interaction", module)
   .add("default", DefaultStory, { colorScheme: "dark" })
   .add("default light", DefaultStory, { colorScheme: "light" })
   .add("PointCloud", () => {
-    const cloud1 = { ...selectedObject.object, ...decodeMarker(POINT_CLOUD_MESSAGE) };
+    const cloud1 = { ...selectedObject.object, ...POINT_CLOUD_MESSAGE };
     const cloud2 = {
       ...selectedObject.object,
-      ...decodeMarker(POINT_CLOUD_WITH_ADDITIONAL_FIELDS),
+      ...POINT_CLOUD_WITH_ADDITIONAL_FIELDS,
     };
 
     return (
-      <SWrapper>
+      <Stack direction="row" flexWrap="wrap" height="100%" bgcolor="background.paper">
         <PanelSetupWithData title="default with point color">
           <Interactions
             {...(sharedProps as any)}
@@ -285,129 +442,6 @@ storiesOf("panels/ThreeDeeRender/Interactions/Interaction", module)
             }}
           />
         </PanelSetupWithData>
-      </SWrapper>
-    );
-  })
-  .add("link and multi-link global variables", () => {
-    return (
-      <SWrapper>
-        <PanelSetupWithData showGlobalVariables showLinkedGlobalVariables title="Default">
-          <Interactions {...(sharedProps as any)} />
-        </PanelSetupWithData>
-
-        <PanelSetupWithData
-          showGlobalVariables
-          showLinkedGlobalVariables
-          title={
-            <>
-              Added a new link between <code>id</code> field and <code>$id</code> variable
-            </>
-          }
-          onMount={(el) => {
-            const btn = el.querySelector("[data-test='link-id']");
-            if (btn) {
-              (btn as any).click();
-              setImmediate(() => {
-                const linkFormBtn = document.querySelector("[data-test='link-form'] button");
-                if (linkFormBtn) {
-                  (linkFormBtn as any).click();
-                }
-              });
-            }
-          }}
-        >
-          <Interactions {...(sharedProps as any)} />
-        </PanelSetupWithData>
-        <PanelSetupWithData
-          showGlobalVariables
-          showLinkedGlobalVariables
-          title={
-            <>
-              Added another field <code>scale</code> to <code>$id</code> variable
-            </>
-          }
-          onMount={(el) => {
-            // click the "link" icon button, manually change the input from "scale" to "id", then click "link" icon
-            const btn = el.querySelector("[data-test='link-scale']");
-            if (btn) {
-              (btn as any).click();
-              setImmediate(() => {
-                const linkNameInput = document.querySelector<HTMLInputElement>(
-                  "[data-test='link-form'] input",
-                );
-                if (linkNameInput) {
-                  triggerInputChange(linkNameInput, "id");
-                  const linkFormBtn = document.querySelector(
-                    "[data-test='link-form'] [data-test='action-buttons'] button",
-                  );
-                  if (linkFormBtn) {
-                    (linkFormBtn as any).click();
-                  }
-                }
-              });
-            }
-          }}
-        >
-          <Interactions {...(sharedProps as any)} />
-        </PanelSetupWithData>
-      </SWrapper>
-    );
-  })
-  .add("unlink single linked global variable", () => {
-    return (
-      <SWrapper>
-        <PanelSetupWithData
-          title={
-            <>
-              Unlinked <code>type</code> field from <code>$type</code> variable
-            </>
-          }
-          showGlobalVariables
-          showLinkedGlobalVariables
-          onMount={(el) => {
-            const btn = el.querySelector("[data-test='unlink-type']");
-            if (btn) {
-              (btn as any).click();
-              setImmediate(() => {
-                const unlinkBtn = document.querySelector("[data-test='unlink-form'] button");
-                if (unlinkBtn) {
-                  (unlinkBtn as any).click();
-                }
-              });
-            }
-          }}
-        >
-          <Interactions {...(sharedProps as any)} />
-        </PanelSetupWithData>
-      </SWrapper>
-    );
-  })
-  .add("unlink multi-linked global variable", () => {
-    return (
-      <SWrapper>
-        <PanelSetupWithData
-          title={
-            <>
-              Unlinked <code>header.frame_id</code> field from <code>$some_val</code> variable{" "}
-            </>
-          }
-          showGlobalVariables
-          showLinkedGlobalVariables
-          onMount={(el) => {
-            const btn = el.querySelector("[data-test='unlink-some_val']");
-            if (btn) {
-              (btn as any).click();
-              setImmediate(() => {
-                const unlinkBtn = document.querySelector("[data-test='unlink-form'] button");
-                if (unlinkBtn) {
-                  (unlinkBtn as any).click();
-                }
-              });
-            }
-          }}
-        >
-          <Interactions {...(sharedProps as any)} />
-        </PanelSetupWithData>
-      </SWrapper>
+      </Stack>
     );
   });
