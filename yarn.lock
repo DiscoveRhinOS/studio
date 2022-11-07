@@ -3787,9 +3787,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/cli@npm:^1.73.0":
-  version: 1.74.3
-  resolution: "@sentry/cli@npm:1.74.3"
+"@sentry/cli@npm:^1.74.6":
+  version: 1.74.6
+  resolution: "@sentry/cli@npm:1.74.6"
   dependencies:
     https-proxy-agent: ^5.0.0
     mkdirp: ^0.5.5
@@ -3800,7 +3800,7 @@ __metadata:
     which: ^2.0.2
   bin:
     sentry-cli: bin/sentry-cli
-  checksum: f90f68d9849bcef031389738e467ae1a2aeca8c2a55b66820d816d0e99990864593dbc04d8c58cf8e6a7a5e320879486ddad09ffdcb0ae63da54f1aa3e0d7fe3
+  checksum: 3d1ef94d5505ed23858503228b59ae1ed401774e27466d7a47eba47be3855e9706f12292d4a0a6135303a5916791620e0d3a184d2fda9e28f2d26ccd347b36fb
   languageName: node
   linkType: hard
 
@@ -3928,12 +3928,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/webpack-plugin@npm:1.18.8":
-  version: 1.18.8
-  resolution: "@sentry/webpack-plugin@npm:1.18.8"
+"@sentry/webpack-plugin@npm:1.20.0":
+  version: 1.20.0
+  resolution: "@sentry/webpack-plugin@npm:1.20.0"
   dependencies:
-    "@sentry/cli": ^1.73.0
-  checksum: e159ee1e4b486a6d602bcf04e08ce4f167c9148aa4b612f6871f81954fba0cf607297a77bcda22f6f882266ac715ce8cb7be55858eaebc9fdbb85737ae92eb04
+    "@sentry/cli": ^1.74.6
+    webpack-sources: ^2.0.0 || ^3.0.0
+  checksum: d582026c3686f287ddc23de4e64c6f03afc2a73a84ec5a8fd3eded56a45683094bf132f4c624a35386fff872eb518771109d5c0b91a2cf79da0aff035c5bb05b
   languageName: node
   linkType: hard
 
@@ -12777,7 +12778,7 @@ __metadata:
     "@pmmmwh/react-refresh-webpack-plugin": 0.5.4
     "@sentry/electron": 4.0.0
     "@sentry/tracing": 7.10.0
-    "@sentry/webpack-plugin": 1.18.8
+    "@sentry/webpack-plugin": 1.20.0
     "@storybook/addon-actions": 6.5.10
     "@storybook/addon-essentials": 6.5.10
     "@storybook/builder-webpack5": 6.5.10
@@ -24650,6 +24651,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"webpack-sources@npm:^2.0.0 || ^3.0.0, webpack-sources@npm:^3.2.3":
+  version: 3.2.3
+  resolution: "webpack-sources@npm:3.2.3"
+  checksum: 989e401b9fe3536529e2a99dac8c1bdc50e3a0a2c8669cbafad31271eadd994bc9405f88a3039cd2e29db5e6d9d0926ceb7a1a4e7409ece021fe79c37d9c4607
+  languageName: node
+  linkType: hard
+
 "webpack-sources@npm:^2.2.0":
   version: 2.3.1
   resolution: "webpack-sources@npm:2.3.1"
@@ -24657,13 +24665,6 @@ __metadata:
     source-list-map: ^2.0.1
     source-map: ^0.6.1
   checksum: 6fd67f2274a84c5f51ad89767112ec8b47727134bf0f2ba0cff458c970f18966939a24128bdbddba621cd66eeb2bef0552642a9333cd8e54514f7b2a71776346
-  languageName: node
-  linkType: hard
-
-"webpack-sources@npm:^3.2.3":
-  version: 3.2.3
-  resolution: "webpack-sources@npm:3.2.3"
-  checksum: 989e401b9fe3536529e2a99dac8c1bdc50e3a0a2c8669cbafad31271eadd994bc9405f88a3039cd2e29db5e6d9d0926ceb7a1a4e7409ece021fe79c37d9c4607
   languageName: node
   linkType: hard
 
